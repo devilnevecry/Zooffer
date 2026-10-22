@@ -1,0 +1,36 @@
+name: zooffer-dev
+
+services:
+  db:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: zooffer
+      POSTGRES_PASSWORD: zooffer_dev_password
+      POSTGRES_DB: zooffer
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/10-init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zooffer -d zooffer"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "zooffer_dev_redis"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "zooffer_dev_redis", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:
+  redisdata:

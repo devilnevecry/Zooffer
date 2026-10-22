@@ -1,0 +1,57 @@
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Legacy reference material — never part of this repository
+legacy/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+web/public/uploads/
+
+# Runtime data
+data/
+uploads/
+media/
+*.sqlite3
+*.db
+logs/
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Tooling artefacts
+playwright-report/
+test-results/
+coverage/
+.trivy/
+gitleaks-report.json
