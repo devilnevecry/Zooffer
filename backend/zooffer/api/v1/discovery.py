@@ -4,6 +4,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Query
+from sqlalchemy import select
 
 from zooffer.api.deps import CurrentAuth, DbSession, OptionalAuth
 from zooffer.core.enums import ListingPurpose, Species
@@ -121,9 +122,18 @@ favorites_router = APIRouter(prefix="/favorites", tags=["favorites"])
 
 @favorites_router.get("", response_model=dict)
 async def list_favorites(auth: CurrentAuth, db: DbSession) -> dict:
+    from zooffer.db.models import AnimalPhoto
+    from zooffer.services.media import media_url, thumb_key_for
+
     rows = await swipe_service.list_favorites(db, auth.user)
     items = []
     for listing, animal in rows:
+        photo = await db.scalar(
+            select(AnimalPhoto)
+            .where(AnimalPhoto.animal_id == animal.id)
+            .order_by(AnimalPhoto.is_primary.desc(), AnimalPhoto.position.asc())
+            .limit(1)
+        )
         items.append(
             {
                 "public_id": str(listing.public_id),
@@ -134,6 +144,9 @@ async def list_favorites(auth: CurrentAuth, db: DbSession) -> dict:
                 "price_kopecks": listing.price_kopecks,
                 "animal_name": animal.name,
                 "species": animal.species,
+                "primary_photo_url": (
+                    media_url(thumb_key_for(photo.storage_key)) if photo is not None else None
+                ),
             }
         )
     return {"items": items}

@@ -163,6 +163,7 @@ class ListingOwnerView(BaseModel):
     city_id: int | None
     region_id: int | None
     animal_id: UUID
+    animal_public_id: UUID
     published_at: datetime | None
     expires_at: datetime | None
     moderation_reason: str | None

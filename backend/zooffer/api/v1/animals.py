@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, File, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from zooffer.api.deps import CurrentAuth, DbSession
 from zooffer.core.errors import ForbiddenError, NotFoundError, ValidationAppError
@@ -14,13 +14,7 @@ from zooffer.schemas.listing import (
     AnimalUpdateRequest,
 )
 from zooffer.services import listing_service
-from zooffer.services.media import (
-    MAX_IMAGES_PER_ANIMAL,
-    get_storage,
-    media_url,
-    process_and_store_image,
-    thumb_key_for,
-)
+from zooffer.services.media import get_storage, media_url, thumb_key_for
 
 router = APIRouter(prefix="/animals", tags=["animals"])
 
@@ -107,28 +101,8 @@ async def upload_photo(
     file: UploadFile = File(...),  # noqa: B008
 ) -> AnimalPhotoOwnerView:
     user = auth.user  # type: ignore[attr-defined]
-    animal = await listing_service.get_animal_for_owner(db, user.id, public_id)
-    count = await db.scalar(
-        select(func.count()).select_from(AnimalPhoto).where(AnimalPhoto.animal_id == animal.id)
-    )
-    if int(count or 0) >= MAX_IMAGES_PER_ANIMAL:
-        raise ValidationAppError("Можно загрузить не более 10 фотографий", code="photo_limit")
     content = await file.read()
-    processed = await process_and_store_image(content)
-    position = int(count or 0)
-    photo = AnimalPhoto(
-        id=uuid.uuid4(),
-        animal_id=animal.id,
-        storage_key=processed.full_key,
-        position=position,
-        width=processed.width,
-        height=processed.height,
-        content_hash=processed.content_hash,
-        is_primary=position == 0,
-        alt_text=animal.name,
-    )
-    db.add(photo)
-    await db.commit()
+    photo = await listing_service.add_animal_photo(db, user, public_id, content)
     return _photo_view(photo)
 
 

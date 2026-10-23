@@ -213,6 +213,79 @@ async def verify_totp(db: AsyncSession, user_id: UUID, code: str) -> bool:
     return True
 
 
+async def setup_totp(db: AsyncSession, user: User) -> tuple[str, str]:
+    """Create (or replace an unconfirmed) TOTP factor and return its provisioning URI."""
+    confirmed = await db.scalar(
+        select(MfaFactor).where(
+            MfaFactor.user_id == user.id, MfaFactor.confirmed_at.is_not(None)
+        )
+    )
+    if confirmed is not None:
+        raise ConflictError(
+            "Двухфакторная аутентификация уже включена", code="mfa_already_enabled"
+        )
+    factor = await db.scalar(
+        select(MfaFactor).where(MfaFactor.user_id == user.id, MfaFactor.factor_type == "totp")
+    )
+    secret = pyotp.random_base32()
+    if factor is None:
+        factor = MfaFactor(
+            id=uuid4(),
+            user_id=user.id,
+            factor_type="totp",
+            secret_encrypted=secret,
+        )
+        db.add(factor)
+    else:
+        factor.secret_encrypted = secret
+        factor.confirmed_at = None
+        factor.last_used_counter = None
+    await db.commit()
+    private = await db.get(UserPrivateData, user.id)
+    account_name = private.email_encrypted if private and private.email_encrypted else str(
+        user.public_id
+    )
+    uri = pyotp.TOTP(secret).provisioning_uri(name=account_name, issuer_name="Zooffer")
+    return secret, uri
+
+
+async def confirm_totp(db: AsyncSession, user: User, code: str) -> None:
+    factor = await db.scalar(
+        select(MfaFactor).where(
+            MfaFactor.user_id == user.id,
+            MfaFactor.factor_type == "totp",
+            MfaFactor.confirmed_at.is_(None),
+        )
+    )
+    if factor is None:
+        raise ValidationAppError(
+            "Сначала создайте секрет двухфакторной аутентификации", code="mfa_not_started"
+        )
+    if not pyotp.TOTP(factor.secret_encrypted).verify(code.strip(), valid_window=1):
+        raise ValidationAppError("Неверный код подтверждения", code="invalid_mfa")
+    factor.confirmed_at = utcnow()
+    factor.last_used_counter = int(datetime.now(UTC).timestamp()) // 30
+    user.mfa_enabled = True
+    await db.commit()
+
+
+async def disable_totp(db: AsyncSession, user: User, code: str) -> None:
+    factor = await db.scalar(
+        select(MfaFactor).where(
+            MfaFactor.user_id == user.id,
+            MfaFactor.factor_type == "totp",
+            MfaFactor.confirmed_at.is_not(None),
+        )
+    )
+    if factor is None:
+        raise ValidationAppError("Двухфакторная аутентификация не включена", code="mfa_not_enabled")
+    if not await verify_totp(db, user.id, code):
+        raise ValidationAppError("Неверный код подтверждения", code="invalid_mfa")
+    await db.delete(factor)
+    user.mfa_enabled = False
+    await db.commit()
+
+
 async def create_session(
     db: AsyncSession,
     user: User,
@@ -356,6 +429,78 @@ async def _create_telegram_user(db: AsyncSession, telegram_id: str) -> User:
         raise ConflictError("Не удалось создать аккаунт", code="telegram_conflict") from exc
     await db.refresh(user)
     return user
+
+
+async def create_telegram_bot_user(
+    db: AsyncSession,
+    *,
+    telegram_id: str,
+    public_first_name: str,
+    accepted_terms: bool,
+    accepted_privacy: bool,
+    channel: str = "telegram",
+) -> User:
+    """Resolve a Telegram identity or create a consented bot-first account.
+
+    Telegram usernames, photos and numeric IDs are never copied into public fields.
+    """
+    identity = await _get_identity(db, AuthProvider.TELEGRAM, telegram_id)
+    if identity is not None:
+        user = await db.get(User, identity.user_id)
+        if user is None or user.status != UserStatus.ACTIVE:
+            raise ForbiddenError("Аккаунт недоступен", code="account_inactive")
+        return user
+    if not accepted_terms or not accepted_privacy:
+        raise ValidationAppError(
+            "Для создания аккаунта примите условия и политику конфиденциальности",
+            code="consent_required",
+        )
+    name = public_first_name.strip()
+    if not name or len(name) > 60:
+        raise ValidationAppError("Укажите имя до 60 символов", code="invalid_name")
+    user = User(public_id=uuid4(), status=UserStatus.ACTIVE, role=UserRole.USER)
+    db.add(user)
+    await db.flush()
+    db.add(Profile(user_id=user.id, public_first_name=name))
+    db.add(UserPrivateData(user_id=user.id))
+    db.add(
+        AuthIdentity(
+            id=uuid4(),
+            user_id=user.id,
+            provider=AuthProvider.TELEGRAM,
+            provider_user_id=telegram_id,
+        )
+    )
+    db.add(
+        Consent(
+            user_id=user.id,
+            document="terms",
+            version=TERMS_VERSION,
+            channel=channel,
+        )
+    )
+    db.add(
+        Consent(
+            user_id=user.id,
+            document="privacy",
+            version=PRIVACY_VERSION,
+            channel=channel,
+        )
+    )
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise ConflictError("Не удалось создать аккаунт", code="telegram_conflict") from exc
+    await db.refresh(user)
+    return user
+
+
+async def find_telegram_user(db: AsyncSession, telegram_id: str) -> User | None:
+    identity = await _get_identity(db, AuthProvider.TELEGRAM, telegram_id)
+    if identity is None:
+        return None
+    return await db.get(User, identity.user_id)
 
 
 async def create_link_token(db: AsyncSession, user_id: UUID) -> tuple[str, datetime]:

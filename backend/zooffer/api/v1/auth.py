@@ -26,6 +26,8 @@ from zooffer.schemas.auth import (
     LoginRequest,
     MeResponse,
     MessageResponse,
+    MfaConfirmRequest,
+    MfaSetupResponse,
     MiniAppAuthRequest,
     OkResponse,
     PasswordResetConfirm,
@@ -210,6 +212,39 @@ async def update_profile(
         city_id=payload.city_id,
     )
     return await auth_service.get_self_view(db, user)
+
+
+@router.post("/mfa/setup", response_model=MfaSetupResponse)
+async def mfa_setup(
+    auth: Annotated[auth_service.AuthContext, Depends(require_user_csrf)], db: DbSession
+) -> MfaSetupResponse:
+    await limiter.hit(f"mfa-setup:{auth.user.id}", limit=5, window_seconds=3600)
+    secret, uri = await auth_service.setup_totp(db, auth.user)
+    return MfaSetupResponse(secret=secret, otpauth_url=uri)
+
+
+@router.post("/mfa/confirm", response_model=OkResponse)
+async def mfa_confirm(
+    payload: MfaConfirmRequest,
+    auth: Annotated[auth_service.AuthContext, Depends(require_user_csrf)],
+    db: DbSession,
+) -> OkResponse:
+    await limiter.hit(f"mfa-confirm:{auth.user.id}", limit=10, window_seconds=3600)
+    await auth_service.confirm_totp(db, auth.user, payload.code)
+    auth.session.mfa_verified_at = auth_service.utcnow()
+    await db.commit()
+    return OkResponse()
+
+
+@router.post("/mfa/disable", response_model=OkResponse)
+async def mfa_disable(
+    payload: MfaConfirmRequest,
+    auth: Annotated[auth_service.AuthContext, Depends(require_user_csrf)],
+    db: DbSession,
+) -> OkResponse:
+    await limiter.hit(f"mfa-disable:{auth.user.id}", limit=10, window_seconds=3600)
+    await auth_service.disable_totp(db, auth.user, payload.code)
+    return OkResponse()
 
 
 @router.get("/sessions", response_model=SessionListResponse)

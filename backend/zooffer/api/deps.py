@@ -105,7 +105,7 @@ def permission_required(permission: str) -> Callable[..., Awaitable[AuthContext]
         allowed = roles.get(permission, {UserRole.SUPERADMIN})
         if auth.user.role not in {role.value for role in allowed}:
             raise ForbiddenError("Недостаточно прав", code="permission_denied")
-        if not auth.user.mfa_enabled and not auth.session.mfa_verified_at:
+        if not (auth.user.mfa_enabled and auth.session.mfa_verified_at):
             raise ForbiddenError(
                 "Для доступа к панели включите двухфакторную аутентификацию", code="mfa_required"
             )
