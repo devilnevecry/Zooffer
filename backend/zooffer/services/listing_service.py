@@ -46,7 +46,12 @@ from zooffer.schemas.public import (
     PublicPhotoView,
     PublicRegionView,
 )
-from zooffer.services.media import media_url, thumb_key_for
+from zooffer.services.media import (
+    MAX_IMAGES_PER_ANIMAL,
+    media_url,
+    process_and_store_image,
+    thumb_key_for,
+)
 
 MATING_PURPOSES = {ListingPurpose.MATING, ListingPurpose.BREEDING_PEDIGREE}
 _MATING_PURPOSE_VALUES = {p.value for p in MATING_PURPOSES}
@@ -152,6 +157,44 @@ async def create_animal(db: AsyncSession, user: User, payload: AnimalCreateReque
     await db.commit()
     await db.refresh(animal)
     return animal
+
+
+async def add_animal_photo(
+    db: AsyncSession,
+    user: User,
+    animal_public_id: UUID,
+    content: bytes,
+) -> AnimalPhoto:
+    """Store one validated, re-encoded photo for an owned animal.
+
+    Used by both the HTTP upload endpoint and the bot wizard so limits and
+    sanitisation are identical across channels.
+    """
+    animal = await _get_owned_animal(db, user.id, animal_public_id)
+    count = await db.scalar(
+        select(func.count()).select_from(AnimalPhoto).where(AnimalPhoto.animal_id == animal.id)
+    )
+    if int(count or 0) >= MAX_IMAGES_PER_ANIMAL:
+        raise ValidationAppError(
+            f"Можно загрузить не более {MAX_IMAGES_PER_ANIMAL} фотографий",
+            code="photo_limit",
+        )
+    processed = await process_and_store_image(content)
+    position = int(count or 0)
+    photo = AnimalPhoto(
+        id=uuid4(),
+        animal_id=animal.id,
+        storage_key=processed.full_key,
+        position=position,
+        width=processed.width,
+        height=processed.height,
+        content_hash=processed.content_hash,
+        is_primary=position == 0,
+        alt_text=animal.name,
+    )
+    db.add(photo)
+    await db.commit()
+    return photo
 
 
 async def update_animal(

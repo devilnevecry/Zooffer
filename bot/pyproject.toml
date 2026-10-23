@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zooffer-bot"
+version = "0.1.0"
+description = "Zooffer Telegram bot (thin aiogram client of the shared backend)"
+requires-python = ">=3.12"
+dependencies = [
+  "aiogram==3.31.0",
+  "redis==5.2.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["zooffer_bot*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "ASYNC", "C4", "SIM", "RUF"]
+ignore = ["S101", "RUF001", "RUF002", "RUF003"]

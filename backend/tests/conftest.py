@@ -19,6 +19,7 @@ os.environ["COOKIE_SECURE"] = "false"
 os.environ["PAYMENT_PROVIDER"] = "fake"
 os.environ["TELEGRAM_BOT_TOKEN"] = "123456:TEST_TOKEN_FOR_UNIT_TESTS_ONLY"
 os.environ["TELEGRAM_BOT_USERNAME"] = "zooffer_test_bot"
+os.environ["TELEGRAM_WEBHOOK_SECRET"] = "test-webhook-secret-0123456789"
 os.environ["HIBP_ENABLED"] = "false"
 
 import pytest
@@ -36,6 +37,9 @@ from zooffer.db.session import get_db
 from zooffer.main import app
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+BOT_DIR = BACKEND_DIR.parent / "bot"
+if str(BOT_DIR) not in sys.path:
+    sys.path.insert(0, str(BOT_DIR))
 
 
 @pytest.fixture(scope="session")

@@ -24,9 +24,22 @@ class MediaStorage(Protocol):
     def exists(self, key: str) -> bool: ...
 
 
+def _resolve_media_root(value: str | Path) -> Path:
+    """Resolve relative media paths against the repository root.
+
+    The backend may be started from either the repository root or ``backend/``;
+    relative media paths must not silently point at different directories.
+    """
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    repository_root = Path(__file__).resolve().parents[3]
+    return (repository_root / path).resolve()
+
+
 class LocalMediaStorage:
     def __init__(self, root: str | Path | None = None) -> None:
-        self.root = Path(root or settings.media_local_path)
+        self.root = _resolve_media_root(root or settings.media_local_path)
 
     def _path(self, key: str) -> Path:
         # Keys are generated server-side; still defend against traversal.

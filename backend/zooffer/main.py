@@ -11,11 +11,17 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from zooffer.api import system
 from zooffer.api.deps import check_origin
+from zooffer.api.v1 import account as account_api
+from zooffer.api.v1 import admin as admin_api
 from zooffer.api.v1 import animals as animals_api
 from zooffer.api.v1 import auth as auth_api
+from zooffer.api.v1 import billing as billing_api
 from zooffer.api.v1 import discovery as discovery_api
 from zooffer.api.v1 import listings as listings_api
 from zooffer.api.v1 import media as media_api
+from zooffer.api.v1 import messaging as messaging_api
+from zooffer.api.v1 import notifications as notifications_api
+from zooffer.api.v1 import reports as reports_api
 from zooffer.config import settings
 from zooffer.core.errors import AppError, app_error_handler
 from zooffer.core.logging import configure_logging, get_logger
@@ -95,6 +101,9 @@ def create_app() -> FastAPI:
         return await call_next(request)
 
     app.include_router(system.router)
+    # Media is served from a stable, CDN-friendly root path; the /api/v1 alias keeps
+    # older clients and tests working.
+    app.include_router(media_api.router)
     app.include_router(media_api.router, prefix="/api/v1")
     app.include_router(auth_api.router, prefix="/api/v1")
     app.include_router(animals_api.router, prefix="/api/v1")
@@ -102,6 +111,14 @@ def create_app() -> FastAPI:
     app.include_router(listings_api.public_router, prefix="/api/v1")
     app.include_router(discovery_api.router, prefix="/api/v1")
     app.include_router(discovery_api.favorites_router, prefix="/api/v1")
+    app.include_router(messaging_api.router, prefix="/api/v1")
+    app.include_router(notifications_api.router, prefix="/api/v1")
+    app.include_router(billing_api.router, prefix="/api/v1")
+    app.include_router(account_api.router, prefix="/api/v1")
+    app.include_router(account_api.public_router, prefix="/api/v1")
+    app.include_router(reports_api.router, prefix="/api/v1")
+    app.include_router(admin_api.router, prefix="/api/v1")
+    app.include_router(account_api.click_router)
     return app
 
 

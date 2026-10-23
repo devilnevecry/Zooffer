@@ -18,6 +18,7 @@ from zooffer.db.models import (
     Favorite,
     Listing,
     Match,
+    Notification,
     Swipe,
     User,
 )
@@ -249,6 +250,17 @@ async def swipe(
                     partner_animal=partner_animal,
                     partner_listing=partner_listing,
                 )
+                for recipient in {target_listing.owner_id, user.id}:
+                    db.add(
+                        Notification(
+                            id=uuid4(),
+                            user_id=recipient,
+                            category="matches",
+                            title="Новое совпадение",
+                            body="У вас взаимная симпатия. Начните диалог в чате.",
+                            data={"conversation_public_id": str(conversation.public_id)},
+                        )
+                    )
 
     try:
         await db.commit()

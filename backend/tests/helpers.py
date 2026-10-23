@@ -111,8 +111,19 @@ async def create_listing(
     return response.json()
 
 
+PUBLISH_CONSENTS = {
+    "confirm_adult": True,
+    "confirm_animal_welfare": True,
+    "confirm_photo_rights": True,
+    "confirm_no_prohibited": True,
+    "confirm_accuracy": True,
+}
+
+
 async def publish_listing(client: AsyncClient, listing_public_id: str) -> dict[str, Any]:
-    response = await client.post(f"/api/v1/listings/{listing_public_id}/publish")
+    response = await client.post(
+        f"/api/v1/listings/{listing_public_id}/publish", json=PUBLISH_CONSENTS
+    )
     assert response.status_code == 200, response.text
     return response.json()
 

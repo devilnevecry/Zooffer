@@ -15,6 +15,7 @@ from zooffer.schemas.listing import (
     ListingCreateRequest,
     ListingOwnerView,
     ListingUpdateRequest,
+    PublishRequest,
 )
 from zooffer.services import listing_service
 from zooffer.services.listing_service import ListingFilters
@@ -25,7 +26,14 @@ public_router = APIRouter(prefix="/public", tags=["public"])
 MAX_PAGE = 50
 
 
-def _owner_view(listing) -> ListingOwnerView:  # type: ignore[no-untyped-def]
+async def _owner_view(db: DbSession, listing) -> ListingOwnerView:  # type: ignore[no-untyped-def]
+    from zooffer.db.models import Animal
+
+    animal_public_id = await db.scalar(
+        select(Animal.public_id).where(Animal.id == listing.animal_id)
+    )
+    if animal_public_id is None:
+        raise NotFoundError("Животное не найдено", code="animal_not_found")
     return ListingOwnerView(
         public_id=listing.public_id,
         slug=listing.slug,
@@ -39,6 +47,7 @@ def _owner_view(listing) -> ListingOwnerView:  # type: ignore[no-untyped-def]
         city_id=listing.city_id,
         region_id=listing.region_id,
         animal_id=listing.animal_id,
+        animal_public_id=animal_public_id,
         published_at=listing.published_at,
         expires_at=listing.expires_at,
         moderation_reason=listing.moderation_reason,
@@ -52,13 +61,13 @@ async def create_listing(
     payload: ListingCreateRequest, auth: CurrentAuth, db: DbSession
 ) -> ListingOwnerView:
     listing = await listing_service.create_listing(db, auth.user, payload)
-    return _owner_view(listing)
+    return await _owner_view(db, listing)
 
 
 @router.get("", response_model=list[ListingOwnerView])
 async def my_listings(auth: CurrentAuth, db: DbSession) -> list[ListingOwnerView]:
     listings = await listing_service.list_owned_listings(db, auth.user.id)
-    return [_owner_view(listing) for listing in listings]
+    return [await _owner_view(db, listing) for listing in listings]
 
 
 @router.get("/{public_id}", response_model=ListingOwnerView)
@@ -68,7 +77,7 @@ async def get_my_listing(
     listings = await listing_service.list_owned_listings(db, auth.user.id)
     for listing in listings:
         if listing.public_id == public_id:
-            return _owner_view(listing)
+            return await _owner_view(db, listing)
     raise NotFoundError("Объявление не найдено", code="listing_not_found")
 
 
@@ -77,37 +86,38 @@ async def update_listing(
     public_id: uuid.UUID, payload: ListingUpdateRequest, auth: CurrentAuth, db: DbSession
 ) -> ListingOwnerView:
     listing = await listing_service.update_listing(db, auth.user, public_id, payload)
-    return _owner_view(listing)
+    return await _owner_view(db, listing)
 
 
 @router.post("/{public_id}/publish", response_model=ListingOwnerView)
 async def publish_listing(
-    public_id: uuid.UUID, auth: CurrentAuth, db: DbSession
+    public_id: uuid.UUID, payload: PublishRequest, auth: CurrentAuth, db: DbSession
 ) -> ListingOwnerView:
+    # Pydantic validates that every consent flag is true before publishing.
     listing = await listing_service.publish_listing(db, auth.user, public_id)
-    return _owner_view(listing)
+    return await _owner_view(db, listing)
 
 
 @router.post("/{public_id}/pause", response_model=ListingOwnerView)
 async def pause_listing(public_id: uuid.UUID, auth: CurrentAuth, db: DbSession) -> ListingOwnerView:
-    return _owner_view(await listing_service.pause_listing(db, auth.user, public_id))
+    return await _owner_view(db, await listing_service.pause_listing(db, auth.user, public_id))
 
 
 @router.post("/{public_id}/renew", response_model=ListingOwnerView)
 async def renew_listing(public_id: uuid.UUID, auth: CurrentAuth, db: DbSession) -> ListingOwnerView:
-    return _owner_view(await listing_service.renew_listing(db, auth.user, public_id))
+    return await _owner_view(db, await listing_service.renew_listing(db, auth.user, public_id))
 
 
 @router.post("/{public_id}/archive", response_model=ListingOwnerView)
 async def archive_listing(
     public_id: uuid.UUID, auth: CurrentAuth, db: DbSession
 ) -> ListingOwnerView:
-    return _owner_view(await listing_service.archive_listing(db, auth.user, public_id))
+    return await _owner_view(db, await listing_service.archive_listing(db, auth.user, public_id))
 
 
 @router.post("/{public_id}/sold", response_model=ListingOwnerView)
 async def sold_listing(public_id: uuid.UUID, auth: CurrentAuth, db: DbSession) -> ListingOwnerView:
-    return _owner_view(await listing_service.mark_sold(db, auth.user, public_id))
+    return await _owner_view(db, await listing_service.mark_sold(db, auth.user, public_id))
 
 
 @public_router.get("/listings", response_model=dict)

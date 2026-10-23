@@ -3,6 +3,7 @@ from __future__ import annotations
 from httpx import AsyncClient
 
 from tests.helpers import (
+    PUBLISH_CONSENTS,
     create_animal,
     create_listing,
     make_published_listing,
@@ -61,9 +62,24 @@ async def test_publish_requires_photo(client: AsyncClient) -> None:
     await register(client, "owner@example.com")
     animal = await create_animal(client)
     listing = await create_listing(client, animal["public_id"])
-    response = await client.post(f"/api/v1/listings/{listing['public_id']}/publish")
+    response = await client.post(
+        f"/api/v1/listings/{listing['public_id']}/publish", json=PUBLISH_CONSENTS
+    )
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "photo_required"
+
+
+async def test_publish_requires_every_consent(client: AsyncClient) -> None:
+    await register(client, "owner@example.com")
+    animal = await create_animal(client)
+    await upload_photo(client, animal["public_id"])
+    listing = await create_listing(client, animal["public_id"])
+    response = await client.post(
+        f"/api/v1/listings/{listing['public_id']}/publish",
+        json={**PUBLISH_CONSENTS, "confirm_accuracy": False},
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
 
 
 async def test_publish_with_contact_details_goes_to_moderation(client: AsyncClient) -> None:
@@ -75,7 +91,9 @@ async def test_publish_with_contact_details_goes_to_moderation(client: AsyncClie
         animal["public_id"],
         description="Пишите на owner@example.com или в телеграм @secret_owner",
     )
-    response = await client.post(f"/api/v1/listings/{listing['public_id']}/publish")
+    response = await client.post(
+        f"/api/v1/listings/{listing['public_id']}/publish", json=PUBLISH_CONSENTS
+    )
     assert response.status_code == 200, response.text
     assert response.json()["status"] == "pending_moderation"
 
