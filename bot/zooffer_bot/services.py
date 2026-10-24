@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from zooffer.config import settings
 from zooffer.core.enums import SwipeAction, SwipeSource
 from zooffer.core.errors import ValidationAppError
 from zooffer.core.rate_limit import limiter
@@ -20,7 +18,6 @@ from zooffer.db.models import (
     Plan,
     Profile,
     Referral,
-    Subscription,
     TelegramChat,
     User,
 )
@@ -30,12 +27,12 @@ from zooffer.schemas.messaging import ConversationDetailView, ConversationListVi
 from zooffer.schemas.public import PublicListingCardView, PublicListingView
 from zooffer.services import (
     account_service,
+    billing_service,
     listing_service,
     messaging_service,
     quota_service,
     swipe_service,
 )
-from zooffer.services.entitlements import get_entitlements
 from zooffer.services.listing_service import ListingFilters, display_name
 
 NOTIFICATION_CATEGORIES = (
@@ -283,11 +280,7 @@ async def mark_sold(db: AsyncSession, user: User, public_id: UUID) -> Listing:
 
 
 def payments_available() -> bool:
-    return bool(
-        settings.payment_provider == "yookassa"
-        and settings.yookassa_shop_id
-        and settings.yookassa_secret_key
-    )
+    return billing_service.payments_available()
 
 
 async def plan_views(db: AsyncSession) -> list[PlanView]:
@@ -315,44 +308,7 @@ async def plan_views(db: AsyncSession) -> list[PlanView]:
 
 
 async def get_subscription_view(db: AsyncSession, user: User) -> SubscriptionView:
-    now = datetime.now(UTC)
-    row = (
-        await db.execute(
-            select(Subscription, Plan)
-            .join(Plan, Plan.id == Subscription.plan_id)
-            .where(Subscription.user_id == user.id)
-            .order_by(Subscription.created_at.desc())
-            .limit(1)
-        )
-    ).first()
-    entitlements = sorted(await get_entitlements(db, user.id))
-    quota = await quota_service.get_quota(db, user.id)
-    available = payments_available()
-    if row is None:
-        return SubscriptionView(
-            status="none",
-            entitlements=entitlements,
-            quota_limit=quota.limit,
-            quota_unlimited=quota.unlimited,
-            payments_available=available,
-        )
-    subscription, plan = row
-    active = (
-        subscription.status in {"active", "past_due"}
-        and subscription.current_period_end is not None
-        and subscription.current_period_end > now
-    )
-    return SubscriptionView(
-        status=subscription.status if active else "expired",
-        plan_code=plan.code,
-        plan_name=plan.name,
-        current_period_end=subscription.current_period_end,
-        cancel_at_period_end=subscription.cancel_at_period_end,
-        entitlements=entitlements,
-        quota_limit=quota.limit,
-        quota_unlimited=quota.unlimited,
-        payments_available=available,
-    )
+    return await billing_service.subscription_view(db, user)
 
 
 async def record_referral(db: AsyncSession, invitee: User, code: str) -> bool:

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { serverFetch } from "@/lib/api";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import type { AdminPaymentList } from "@/lib/types";
@@ -46,6 +48,7 @@ export default async function AdminPaymentsPage() {
               <th>Статус</th>
               <th>Сумма</th>
               <th>Оплачен</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -58,6 +61,14 @@ export default async function AdminPaymentsPage() {
                 <td>{statusLabels[item.status] ?? item.status}</td>
                 <td>{formatPrice(item.amount_kopecks)}</td>
                 <td>{item.paid_at ? formatDateTime(item.paid_at) : "—"}</td>
+                <td>
+                  <Link
+                    href={`/admin/payments/${item.public_id}`}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    Открыть
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

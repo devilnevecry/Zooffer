@@ -37,6 +37,8 @@ export default async function SubscriptionPage() {
             quota_limit: 0,
             quota_unlimited: false,
             payments_available: false,
+            payments_demo: false,
+            payment_provider: "fake",
           }
         }
         plans={plans?.items ?? []}

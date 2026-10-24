@@ -2,6 +2,7 @@
 
 | Document | Purpose |
 |---|---|
+| [../README.md](../README.md) | Project overview, quick start, verification commands |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Phased plan, acceptance criteria, risks, live status |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design, layering, data flow |
 | [DECISIONS.md](DECISIONS.md) | Decision index + ADR links |

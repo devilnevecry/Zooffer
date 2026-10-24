@@ -149,13 +149,16 @@ async def test_webhook_signature_amount_and_order_ownership(
     stored = await db.get(PaymentOrder, order_id)
     assert stored is not None
     assert stored.provider_payment_id is not None
+    payment_id = stored.provider_payment_id
+    amount_kopecks = stored.amount_kopecks
+    currency = stored.currency
     provider = FakePaymentProvider()
 
     bad_headers, bad_body = provider.signed_success_webhook(
         order_id=order_id,
-        provider_payment_id=stored.provider_payment_id,
-        amount_kopecks=stored.amount_kopecks,
-        currency=stored.currency,
+        provider_payment_id=payment_id,
+        amount_kopecks=amount_kopecks,
+        currency=currency,
     )
     bad_headers["X-Fake-Signature"] = "00" * 32
     bad = await client.post(
@@ -164,11 +167,21 @@ async def test_webhook_signature_amount_and_order_ownership(
     assert bad.status_code == 400
     assert bad.json()["error"]["code"] == "invalid_signature"
 
+    # Amount mismatch is recorded under the provider event id, so use a second
+    # order to prove validation without poisoning the valid first event.
+    await _plan(db, code="premium", price=99900)
+    other_order = (
+        await client.post("/api/v1/billing/orders", json={"plan_code": "premium"})
+    ).json()
+    db.expire_all()
+    stored_other = await db.get(PaymentOrder, UUID(other_order["public_id"]))
+    assert stored_other is not None
+    assert stored_other.provider_payment_id is not None
     mismatch_headers, mismatch_body = provider.signed_success_webhook(
-        order_id=order_id,
-        provider_payment_id=stored.provider_payment_id,
+        order_id=stored_other.id,
+        provider_payment_id=stored_other.provider_payment_id,
         amount_kopecks=1,
-        currency=stored.currency,
+        currency=stored_other.currency,
     )
     mismatch = await client.post(
         "/api/v1/billing/webhooks/fake", content=mismatch_body, headers=mismatch_headers
@@ -185,9 +198,9 @@ async def test_webhook_signature_amount_and_order_ownership(
     # A valid, correctly priced event succeeds.
     headers, body = provider.signed_success_webhook(
         order_id=order_id,
-        provider_payment_id=stored.provider_payment_id,
-        amount_kopecks=stored.amount_kopecks,
-        currency=stored.currency,
+        provider_payment_id=payment_id,
+        amount_kopecks=amount_kopecks,
+        currency=currency,
     )
     ok = await client.post("/api/v1/billing/webhooks/fake", content=body, headers=headers)
     assert ok.status_code == 200, ok.text
@@ -201,9 +214,9 @@ async def test_webhook_signature_amount_and_order_ownership(
 
     refund_headers, refund_body = provider.signed_refund_webhook(
         order_id=order_id,
-        provider_payment_id=stored.provider_payment_id,
-        amount_kopecks=stored.amount_kopecks,
-        currency=stored.currency,
+        provider_payment_id=payment_id,
+        amount_kopecks=amount_kopecks,
+        currency=currency,
     )
     refunded = await client.post(
         "/api/v1/billing/webhooks/fake", content=refund_body, headers=refund_headers
@@ -246,6 +259,7 @@ async def test_admin_payment_detail_refund_grant_and_reconcile(
 ) -> None:
     await register(client, "admin-pay@example.com")
     plan = await _plan(db)
+    plan_id = plan.id
     paid = await _create_paid_order(client, "plus")
 
     setup = await client.post("/api/v1/auth/mfa/setup")
@@ -280,14 +294,12 @@ async def test_admin_payment_detail_refund_grant_and_reconcile(
     assert current.json()["status"] in {"expired", "canceled"}
     db.expire_all()
     subscription = await db.scalar(
-        select(Subscription).where(Subscription.plan_id == plan.id)
+        select(Subscription).where(Subscription.plan_id == plan_id)
     )
     assert subscription is not None
     assert subscription.status == "canceled"
 
     admin_public_id = me.json()["user"]["public_id"]
-    target = await db.scalar(select(User).where(User.public_id == UUID(admin_public_id)))
-    assert target is not None
 
     grant = await client.post(
         f"/api/v1/admin/users/{admin_public_id}/entitlements",

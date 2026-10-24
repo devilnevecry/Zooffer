@@ -4463,6 +4463,80 @@ button {
   text-transform: uppercase;
 }
 
+.checkout-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 680px;
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.checkout-summary {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.checkout-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.checkout-summary dt {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.checkout-summary dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.checkout-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2, #f6f8fb);
+}
+
+.checkout-result.success {
+  background: #edf9f0;
+}
+
+.checkout-result p {
+  margin: 0;
+}
+
+.checkout-panel .btn {
+  align-self: flex-start;
+}
+
+.admin-refund {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 520px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-refund .btn {
+  align-self: flex-start;
+}
+
 .legal-summary {
   display: flex;
   flex-direction: column;

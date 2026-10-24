@@ -178,25 +178,25 @@ Production compose (Russia-located host), Caddy/TLS and headers, webhook registr
 monitoring/alerts, encrypted backups with an executed restore drill, runbooks, rollback, final
 repository audit from a fresh clone.
 
-## Current status (2026-10-22)
+## Current status (2026-10-24)
 
 | Phase | Status | Evidence / notes |
 |---|---|---|
 | 1. Architecture, repository, environment | `VERIFIED` (local) | Git repo, docs/ADRs, config fail-fast, Docker PostgreSQL 16 + Redis healthy; remote GitHub `BLOCKED` (B1) |
 | 2. Schema and backend foundation | `VERIFIED` | 3 Alembic migrations applied; health/readiness, structured logs, error envelope, metrics, media storage |
 | 3. Auth, accounts, linking | `VERIFIED` (password/web) / `IMPLEMENTED-UNVERIFIED` (live Telegram) | `backend/tests/test_auth.py`; Telegram/Mini App fixtures; live bot `BLOCKED` (B2/B3) |
-| 4. Animal profiles, listings, search | `VERIFIED` | `backend/tests/test_listings.py`; CRUD, photo pipeline, publish/pause/renew/archive/sold, FTS + filters, privacy DTOs |
-| 5. Media pipeline | `VERIFIED` | Re-encode/WebP/EXIF strip, upload attacks tested; private documents allow-listed away from public media route |
-| 6. Swipes, favorites, matching, quotas | `VERIFIED` | `backend/tests/test_discovery.py`; atomic quota, idempotency, mutual likes only, undo entitlement, favorites |
-| 7. Messaging and notifications | `NOT STARTED` (models exist) | Next slice |
-| 8. Subscriptions and payments | `NOT STARTED` (models + interfaces exist) | Fake provider boundary prepared |
-| 9. Telegram bot | `NOT STARTED` | Requires service layer reuse |
-| 10. Mini App | `NOT STARTED` | Depends on web |
-| 11. Administration/moderation | `NOT STARTED` | Automated moderation pre-checks exist |
-| 12. Partners/SEO/growth | `NOT STARTED` | Models and public partner schema exist |
-| 13. Security/privacy/legal sweep | `PARTIAL` | Privacy canary suite and upload/IDOR/CSRF tests started |
-| 14. Integration/e2e/performance | `NOT STARTED` | |
-| 15. Deployment/operations | `NOT STARTED` | Infra scaffold only; hosting `BLOCKED` (B7) |
+| 4. Design and website | `VERIFIED` (local) | Princess Blue design system, homepage, all public/account pages, responsive QA at 390/1280; `next build` |
+| 5. Animals, listings, search, media | `VERIFIED` | `test_listings.py`; CRUD, photo pipeline, state machine, FTS + filters, SEO pages, privacy DTOs |
+| 6. Swipes, favorites, matching, quotas | `VERIFIED` | `test_discovery.py`; atomic quota, idempotency, mutual likes only, undo entitlement |
+| 7. Messaging and notifications | `VERIFIED` | `test_messaging.py`; conversations, SSE/polling, blocks, reports, in-app preferences; bot notification worker tested with fakes |
+| 8. Subscriptions and payments | `VERIFIED` (fake) / `BLOCKED` (real) | `test_payments.py` (5 tests); server pricing, signed webhooks, replay/idempotency, refunds, admin grant/reconcile; YooKassa sandbox and Stars `BLOCKED` (B4/B5) |
+| 9. Telegram bot | `IMPLEMENTED-UNVERIFIED` (live) | Complete handlers, signed callbacks, onboarding, wizard, swipes, chats, notifications; `bot/tests`; live `BLOCKED` (B2) |
+| 10. Mini App | `IMPLEMENTED-UNVERIFIED` (live) | `/tg/*` screens, `initData` session, shared API/design; local QA; live `BLOCKED` (B3) |
+| 11. Administration/moderation | `VERIFIED` | RBAC + MFA, moderation, reports, users, support, settings, audit, payments; `test_admin.py`, `test_reports.py`, `test_payments.py` |
+| 12. Partners/SEO/growth | `VERIFIED` | Offers, click attribution, inquiry, ad labels, sitemap/robots/JSON-LD; `test_account.py` |
+| 13. Security/privacy/legal sweep | `VERIFIED` (documented scope) | Canary/IDOR/upload/CSRF/webhook tests; `docs/SECURITY_REPORT.md`; legal review `BLOCKED` (B8) |
+| 14. Integration/e2e/performance | `PARTIAL` | Local visual QA; browser e2e, Playwright and load tests `NOT STARTED` |
+| 15. Deployment/operations | `BLOCKED` | Runbook and compose exist; hosting, DNS, TLS and restore drill `BLOCKED` (B7) |
 
 ## Dependencies and risks
 

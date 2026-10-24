@@ -15,6 +15,8 @@ const fallback: SubscriptionState = {
   quota_limit: 0,
   quota_unlimited: false,
   payments_available: false,
+  payments_demo: false,
+  payment_provider: "fake",
 };
 
 export function MiniSubscription() {
@@ -51,6 +53,7 @@ export function MiniSubscription() {
         initial={current}
         plans={plans.data?.items ?? []}
         legalPath="/legal/offer"
+        checkoutPath="/tg/subscription/checkout"
       />
     </div>
   );

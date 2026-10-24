@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CheckIcon, ShieldIcon } from "./icons";
 import { useToast } from "./toast-provider";
 import { api, ClientApiError } from "@/lib/client";
 import { formatDate, formatPrice } from "@/lib/format";
-import type { Plan, SubscriptionState } from "@/lib/types";
+import type { BillingOrder, Plan, SubscriptionState } from "@/lib/types";
 
 const entitlementLabels: Record<string, string> = {
   unlimited_swipes: "Неограниченные свайпы",
@@ -23,14 +24,18 @@ export function SubscriptionManager({
   initial,
   plans,
   legalPath = "/legal/offer",
+  checkoutPath = "/account/subscription/checkout",
 }: {
   initial: SubscriptionState;
   plans: Plan[];
   legalPath?: string;
+  checkoutPath?: string;
 }) {
   const showToast = useToast();
+  const router = useRouter();
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const [paying, setPaying] = useState<string | null>(null);
 
   const cancel = async () => {
     if (
@@ -52,6 +57,27 @@ export function SubscriptionManager({
       );
     } finally {
       setBusy(false);
+    }
+  };
+
+  const startCheckout = async (planCode: string) => {
+    setPaying(planCode);
+    try {
+      const order = await api<BillingOrder>("/api/v1/billing/orders", {
+        method: "POST",
+        body: { plan_code: planCode },
+      });
+      if (order.provider !== "fake" && order.confirmation_url) {
+        window.location.assign(order.confirmation_url);
+        return;
+      }
+      router.push(`${checkoutPath}?order=${order.public_id}`);
+    } catch (err) {
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось создать платёж",
+        "error",
+      );
+      setPaying(null);
     }
   };
 
@@ -96,6 +122,16 @@ export function SubscriptionManager({
             Онлайн-оплата пока недоступна: не настроены платёжные реквизиты. Цены ниже —
             демонстрационные и будут изменены до запуска. Оформить платный план сейчас
             нельзя, списаний не происходит.
+          </span>
+        </div>
+      )}
+
+      {state.payments_available && state.payments_demo && (
+        <div className="notice warn">
+          <ShieldIcon width={18} height={18} />
+          <span>
+            Включён демонстрационный режим оплаты. Реальные деньги не списываются, карта
+            не запрашивается. Такой платёж нужен только для проверки сценария.
           </span>
         </div>
       )}
@@ -154,13 +190,18 @@ export function SubscriptionManager({
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
-                  disabled={!state.payments_available || current}
+                  onClick={() => void startCheckout(plan.code)}
+                  disabled={!state.payments_available || current || paying !== null}
                 >
                   {current
                     ? "Подключено"
-                    : state.payments_available
-                      ? "Перейти к оплате"
-                      : "Оплата недоступна"}
+                    : paying === plan.code
+                      ? "Создаём платёж…"
+                      : state.payments_available
+                        ? state.payments_demo
+                          ? "Демо-оплата"
+                          : "Перейти к оплате"
+                        : "Оплата недоступна"}
                 </button>
               </article>
             );

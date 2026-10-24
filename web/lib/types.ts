@@ -356,6 +356,22 @@ export interface SubscriptionState {
   quota_limit: number;
   quota_unlimited: boolean;
   payments_available: boolean;
+  payments_demo: boolean;
+  payment_provider: string;
+}
+
+export interface BillingOrder {
+  public_id: string;
+  plan_code: string;
+  provider: string;
+  status: string;
+  amount_kopecks: number;
+  currency: string;
+  confirmation_url: string | null;
+  demo: boolean;
+  created_at: string;
+  expires_at: string | null;
+  paid_at: string | null;
 }
 
 export interface SessionView {
@@ -545,5 +561,21 @@ export interface AdminPayment {
 
 export interface AdminPaymentList {
   items: AdminPayment[];
+}
+
+export interface AdminPaymentEvent {
+  provider_event_id: string;
+  event_type: string;
+  status: string;
+  signature_valid: boolean;
+  processed_at: string | null;
+  error: string | null;
+  created_at: string;
+}
+
+export interface AdminPaymentDetail {
+  order: BillingOrder;
+  payment_id: string | null;
+  events: AdminPaymentEvent[];
 }
 
