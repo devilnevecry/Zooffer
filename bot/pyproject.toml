@@ -9,7 +9,7 @@ description = "Zooffer Telegram bot (thin aiogram client of the shared backend)"
 requires-python = ">=3.12"
 dependencies = [
   "aiogram==3.31.0",
-  "redis==5.2.1",
+  "redis==8.1.0",
 ]
 
 [tool.setuptools.packages.find]
