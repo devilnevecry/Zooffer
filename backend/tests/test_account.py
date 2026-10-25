@@ -195,9 +195,7 @@ async def test_support_ticket_validation_and_rate_limit(client: AsyncClient, db)
     assert ticket is not None
     assert ticket.user_id == owner_id
     assert ticket.channel == "web"
-    message = await db.scalar(
-        select(SupportMessage).where(SupportMessage.ticket_id == ticket.id)
-    )
+    message = await db.scalar(select(SupportMessage).where(SupportMessage.ticket_id == ticket.id))
     assert message is not None
     assert message.body == "Проверьте, пожалуйста, доставку писем."
     assert message.is_staff is False
@@ -465,9 +463,7 @@ async def test_account_export_is_owner_scoped(client: AsyncClient) -> None:
     async with extra_client() as owner_client, extra_client() as other_client:
         owner = await register(owner_client, "owner@example.com")
         animal, listing, _ = await make_published_listing(owner_client)
-        other = await register(
-            other_client, "other@example.com", first_name="Иван", last_name=None
-        )
+        other = await register(other_client, "other@example.com", first_name="Иван", last_name=None)
         _, other_listing, _ = await make_published_listing(
             other_client,
             name="Лада",
@@ -521,16 +517,12 @@ async def test_account_delete_requires_confirmation_and_erases(client: AsyncClie
     owner_id = await _internal_id(db, owner["public_id"])
     _, _, published = await make_published_listing(client)
 
-    wrong = await client.request(
-        "DELETE", "/api/v1/account", json={"confirmation": "удалить всё"}
-    )
+    wrong = await client.request("DELETE", "/api/v1/account", json={"confirmation": "удалить всё"})
     assert wrong.status_code == 422
     assert wrong.json()["error"]["code"] == "confirmation_failed"
     assert (await client.get("/api/v1/auth/me")).status_code == 200
 
-    deleted = await client.request(
-        "DELETE", "/api/v1/account", json={"confirmation": "удалить"}
-    )
+    deleted = await client.request("DELETE", "/api/v1/account", json={"confirmation": "удалить"})
     assert deleted.status_code == 200, deleted.text
     assert deleted.json()["ok"] is True
     assert (await client.get("/api/v1/auth/me")).status_code == 401

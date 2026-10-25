@@ -134,9 +134,7 @@ async def get_notification_preferences(
         row.category: row
         for row in (
             await db.scalars(
-                select(NotificationPreference).where(
-                    NotificationPreference.user_id == auth.user.id
-                )
+                select(NotificationPreference).where(NotificationPreference.user_id == auth.user.id)
             )
         ).all()
     }
@@ -292,9 +290,7 @@ async def cancel_subscription(auth: CurrentAuth, db: DbSession) -> SubscriptionV
 
 
 @router.get("/account/export")
-async def export_account(
-    auth: CurrentAuth, db: DbSession, response: Response
-) -> dict[str, Any]:
+async def export_account(auth: CurrentAuth, db: DbSession, response: Response) -> dict[str, Any]:
     await limiter.hit(f"export:{auth.user.id}", limit=3, window_seconds=3600)
     archive = await account_service.export_user_data(db, auth.user)
     response.headers["Content-Disposition"] = (
@@ -332,9 +328,7 @@ async def list_blocked_users(auth: CurrentAuth, db: DbSession) -> BlockedUserLis
 
 
 @router.delete("/blocked-users/{block_id}", response_model=OkResponse)
-async def unblock_user(
-    block_id: UUID, auth: CurrentAuth, db: DbSession
-) -> OkResponse:
+async def unblock_user(block_id: UUID, auth: CurrentAuth, db: DbSession) -> OkResponse:
     await account_service.unblock(db, auth.user.id, block_id)
     return OkResponse()
 
@@ -373,9 +367,7 @@ async def track_partner_click(
             offer_id=offer.id,
             user_id=auth.user.id if auth else None,
             ip_hash=request_ip_hash(request),
-            ua_hash=(
-                hashlib.sha256(user_agent.encode()).hexdigest() if user_agent else None
-            ),
+            ua_hash=(hashlib.sha256(user_agent.encode()).hexdigest() if user_agent else None),
             attribution_token=generate_token(),
         )
     )

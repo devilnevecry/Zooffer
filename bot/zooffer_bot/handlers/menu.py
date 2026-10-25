@@ -273,9 +273,7 @@ async def menu_callbacks(
         available = services.payments_available()
         await callback.message.answer(
             texts.plans_text(bool(plans), available),
-            reply_markup=plans_keyboard(
-                [(plan.code, plan.name) for plan in plans]
-            )
+            reply_markup=plans_keyboard([(plan.code, plan.name) for plan in plans])
             if plans and available
             else main_menu(config.mini_app_url),
         )
@@ -340,9 +338,7 @@ async def toggle_notifications(
         callback, "Уведомления включены" if enabled else "Уведомления выключены"
     )
     if callback.message is not None:
-        await callback.message.edit_reply_markup(
-            reply_markup=settings_keyboard(enabled)
-        )
+        await callback.message.edit_reply_markup(reply_markup=settings_keyboard(enabled))
 
 
 @router.callback_query(F.data.startswith(prefix("buy:")))

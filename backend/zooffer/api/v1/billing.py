@@ -33,24 +33,18 @@ async def create_order(
 
 
 @router.get("/orders/{order_id}", response_model=BillingOrderView)
-async def get_order(
-    order_id: UUID, auth: CurrentAuth, db: DbSession
-) -> BillingOrderView:
+async def get_order(order_id: UUID, auth: CurrentAuth, db: DbSession) -> BillingOrderView:
     return await billing_service.get_order(db, auth.user, order_id)
 
 
 @router.post("/orders/{order_id}/demo-confirm", response_model=BillingOrderView)
-async def demo_confirm(
-    order_id: UUID, auth: CurrentAuth, db: DbSession
-) -> BillingOrderView:
+async def demo_confirm(order_id: UUID, auth: CurrentAuth, db: DbSession) -> BillingOrderView:
     await limiter.hit(f"billing-demo:{auth.user.id}", limit=20, window_seconds=3600)
     return await billing_service.demo_confirm(db, auth.user, order_id)
 
 
 @router.post("/webhooks/{provider_name}", include_in_schema=False)
-async def payment_webhook(
-    provider_name: str, request: Request, db: DbSession
-) -> dict[str, object]:
+async def payment_webhook(provider_name: str, request: Request, db: DbSession) -> dict[str, object]:
     """Provider callback endpoint. Authenticity is checked per provider."""
     ip = client_ip(request) or "unknown"
     await limiter.hit(f"payment-webhook:{ip}", limit=600, window_seconds=60)
@@ -61,7 +55,5 @@ async def payment_webhook(
         raise ValidationAppError(
             "Уведомление платёжной системы слишком большое", code="webhook_too_large"
         )
-    result = await billing_service.process_webhook(
-        db, provider_name, dict(request.headers), body
-    )
+    result = await billing_service.process_webhook(db, provider_name, dict(request.headers), body)
     return {"ok": True, "result": result}

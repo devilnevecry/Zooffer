@@ -42,7 +42,8 @@ async def is_breached_password(password: str) -> bool:
         return True
     if not settings.hibp_enabled:
         return False
-    digest = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()  # noqa: S324 (HIBP protocol)
+    # HIBP uses SHA-1 k-anonymity over a public password corpus; this is not storage.
+    digest = hashlib.sha1(password.encode("utf-8"), usedforsecurity=False).hexdigest().upper()
     prefix, suffix = digest[:5], digest[5:]
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:

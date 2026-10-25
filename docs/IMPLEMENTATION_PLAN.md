@@ -12,16 +12,16 @@ The master prompt (`ZOOFFER_MASTER_PROMPT.md`) is the source of truth.
 | Item | Fact | Consequence |
 |---|---|---|
 | Python | 3.12.7, venv at `.venv` | Backend targets 3.12 |
-| Node | 24.19, npm 11.17 (no pnpm) | Web uses npm workspaces |
+| Node | 24.19 local, CI on Node 22; npm 11.17 (no pnpm) | Web uses npm and a single `package-lock.json` |
 | Docker | Docker 29.4.2; daemon started during this session | PostgreSQL 16 + Redis run locally via `compose.dev.yaml` |
-| GitHub CLI | `gh` not installed, no `GH_TOKEN`/`GITHUB_TOKEN` in env | Remote repo creation is `BLOCKED`; local repo, branches, tags and push instructions are produced |
-| Make | not installed on this Windows host | `make` targets are committed for CI/Linux; equivalent PowerShell scripts are provided and used for verification |
+| GitHub CLI | `gh` not installed; a stored HTTPS credential allowed `git push` | `main` and tags pushed; PRs, releases, milestones and CI runs remain unverified (B1) |
+| Make | not installed on this Windows host | `scripts/ci.ps1` is the local gate; GitHub Actions runs the same steps on Linux |
 
 ## Architecture summary
 
 - **Monorepo**: `backend/` (FastAPI + SQLAlchemy 2 + Alembic), `bot/` (aiogram 3, thin; imports
   backend domain services), `web/` (Next.js App Router incl. `/tg` Mini App), `infra/`, `docs/`,
-  `tests/e2e`.
+  `scripts/`. Browser e2e tests are not implemented (`NOT STARTED`).
 - **One canonical identity and database.** The website, Telegram bot and Mini App all call the same
   domain/service layer; no business rules are duplicated in clients.
 - **Privacy by construction**: `user_private_data` is a separate table, all public responses use
@@ -31,7 +31,8 @@ The master prompt (`ZOOFFER_MASTER_PROMPT.md`) is the source of truth.
 - **Payments** are behind a `PaymentProvider` interface. The fake provider is fully tested; real
   YooKassa and Telegram Stars are `BLOCKED` until merchant/bot credentials exist.
 - **Media**: content-sniffed, re-encoded (EXIF/GPS stripped) to WebP, stored outside the web root via
-  a `MediaStorage` interface (local dev / S3-compatible production).
+  a `MediaStorage` interface. Only the local-disk adapter exists; S3-compatible storage is `BLOCKED`
+  (B9).
 
 ## Phase 1 — Architecture, repository, environment, requirements
 
@@ -45,7 +46,7 @@ Tasks:
 6. Backend/frontend tooling: ruff, mypy, pytest, eslint, tsc, prettier; scripts for Windows.
 
 Acceptance: `git status` clean of legacy files; config loads; lint/type/test commands run; docs
-indexed. Remote GitHub repo `BLOCKED` and documented with exact push commands.
+indexed. Remote GitHub `main` and tags pushed; PR/milestone/CI observation remains unverified (B1).
 
 ## Phase 2 — Database schema and backend foundation
 
@@ -59,7 +60,7 @@ Tasks:
    error envelope.
 4. RBAC policy layer skeleton and permission-declaring dependencies.
 5. Public DTO allowlists and the privacy-leak test harness with canary strings.
-6. `make`/scripts: migrate, seed, run.
+6. PowerShell scripts: migrate, seed, run and the local CI launcher.
 
 Acceptance: migrations apply to empty DB, downgrade works; constraints tested; leak harness fails if
 a private field is added to a public schema; health endpoints return expected payloads.
@@ -178,11 +179,11 @@ Production compose (Russia-located host), Caddy/TLS and headers, webhook registr
 monitoring/alerts, encrypted backups with an executed restore drill, runbooks, rollback, final
 repository audit from a fresh clone.
 
-## Current status (2026-10-24)
+## Current status (2026-10-25)
 
 | Phase | Status | Evidence / notes |
 |---|---|---|
-| 1. Architecture, repository, environment | `VERIFIED` (local) | Git repo, docs/ADRs, config fail-fast, Docker PostgreSQL 16 + Redis healthy; remote GitHub `BLOCKED` (B1) |
+| 1. Architecture, repository, environment | `VERIFIED` (local) / `IMPLEMENTED-UNVERIFIED` (remote flow) | Git repo, docs/ADRs, config fail-fast, Docker PostgreSQL 16 + Redis healthy; `main` and tags pushed, PR/CI observation unverified (B1) |
 | 2. Schema and backend foundation | `VERIFIED` | 3 Alembic migrations applied; health/readiness, structured logs, error envelope, metrics, media storage |
 | 3. Auth, accounts, linking | `VERIFIED` (password/web) / `IMPLEMENTED-UNVERIFIED` (live Telegram) | `backend/tests/test_auth.py`; Telegram/Mini App fixtures; live bot `BLOCKED` (B2/B3) |
 | 4. Design and website | `VERIFIED` (local) | Princess Blue design system, homepage, all public/account pages, responsive QA at 390/1280; `next build` |
@@ -190,19 +191,19 @@ repository audit from a fresh clone.
 | 6. Swipes, favorites, matching, quotas | `VERIFIED` | `test_discovery.py`; atomic quota, idempotency, mutual likes only, undo entitlement |
 | 7. Messaging and notifications | `VERIFIED` | `test_messaging.py`; conversations, SSE/polling, blocks, reports, in-app preferences; bot notification worker tested with fakes |
 | 8. Subscriptions and payments | `VERIFIED` (fake) / `BLOCKED` (real) | `test_payments.py` (5 tests); server pricing, signed webhooks, replay/idempotency, refunds, admin grant/reconcile; YooKassa sandbox and Stars `BLOCKED` (B4/B5) |
-| 9. Telegram bot | `IMPLEMENTED-UNVERIFIED` (live) | Complete handlers, signed callbacks, onboarding, wizard, swipes, chats, notifications; `bot/tests`; live `BLOCKED` (B2) |
+| 9. Telegram bot | `IMPLEMENTED-UNVERIFIED` (live) | Complete handlers, signed callbacks, onboarding, wizard, swipes, chats, notifications; `backend/tests/test_bot.py`; live `BLOCKED` (B2) |
 | 10. Mini App | `IMPLEMENTED-UNVERIFIED` (live) | `/tg/*` screens, `initData` session, shared API/design; local QA; live `BLOCKED` (B3) |
 | 11. Administration/moderation | `VERIFIED` | RBAC + MFA, moderation, reports, users, support, settings, audit, payments; `test_admin.py`, `test_reports.py`, `test_payments.py` |
 | 12. Partners/SEO/growth | `VERIFIED` | Offers, click attribution, inquiry, ad labels, sitemap/robots/JSON-LD; `test_account.py` |
-| 13. Security/privacy/legal sweep | `VERIFIED` (documented scope) | Canary/IDOR/upload/CSRF/webhook tests; `docs/SECURITY_REPORT.md`; legal review `BLOCKED` (B8) |
+| 13. Security/privacy/legal sweep | `VERIFIED` (documented scope) | Canary/IDOR/upload/CSRF/webhook tests; bandit, gitleaks, pip-audit and npm audit clean; legal review `BLOCKED` (B8) |
 | 14. Integration/e2e/performance | `PARTIAL` | Local visual QA; browser e2e, Playwright and load tests `NOT STARTED` |
-| 15. Deployment/operations | `BLOCKED` | Runbook and compose exist; hosting, DNS, TLS and restore drill `BLOCKED` (B7) |
+| 15. Deployment/operations | `BLOCKED` | Local compose and runbook exist; no production compose/Caddy artifact; hosting, DNS, TLS and restore drill `BLOCKED` (B7) |
 
 ## Dependencies and risks
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| No GitHub credentials / `gh` | Cannot create private remote, PRs, releases | Local branches/tags + exact push commands; blocker recorded |
+| No GitHub API token / `gh` | PRs, milestones, labels, releases and remote CI runs cannot be created or observed | `main` and tags pushed over HTTPS; workflows/templates committed; blocker recorded (B1) |
 | No Telegram bot token | Live bot/Mini App cannot be verified | Provider interfaces + fake transport tests; blocker recorded |
 | No YooKassa/Stars merchant credentials | Real payments cannot be verified | Fake provider fully tested; adapters isolated and marked BLOCKED |
 | Docker/PostgreSQL availability | Integration tests cannot run | Postgres 16 container; tests fail loudly rather than silently skip |

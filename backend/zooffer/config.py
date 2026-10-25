@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     yookassa_secret_key: str = ""
     yookassa_return_url: str = "http://localhost:3000/account/subscription"
 
-    media_backend: Literal["local", "s3"] = "local"
+    media_backend: Literal["local"] = "local"  # S3 adapter is not implemented (B9)
     media_local_path: str = "./data/media"
     media_public_base_url: str = "http://localhost:8000"
     max_upload_bytes: int = 8 * 1024 * 1024

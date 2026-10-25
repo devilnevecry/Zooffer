@@ -19,14 +19,12 @@ export default async function NotificationsPage() {
           <span className="eyebrow">События</span>
           <h1>Уведомления</h1>
           <p className="muted">
-            Только важное: ответы, совпадения, проверка объявлений и состояние
-            аккаунта. Рекламные рассылки можно отключить в настройках.
+            Только важное: ответы, совпадения, проверка объявлений и состояние аккаунта. Рекламные
+            рассылки можно отключить в настройках.
           </p>
         </div>
       </div>
-      <NotificationCenter
-        initial={notifications ?? { items: [], unread_count: 0 }}
-      />
+      <NotificationCenter initial={notifications ?? { items: [], unread_count: 0 }} />
     </>
   );
 }

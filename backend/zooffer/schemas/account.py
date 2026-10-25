@@ -201,4 +201,3 @@ class AccountDeleteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     confirmation: str = Field(min_length=1, max_length=40)
-

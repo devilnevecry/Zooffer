@@ -62,7 +62,8 @@ export default async function ListingPage({ params }: PageProps) {
     limit: 4,
     sort: "newest",
   });
-  const related = similar?.items.filter((item) => item.public_id !== listing.public_id).slice(0, 3) ?? [];
+  const related =
+    similar?.items.filter((item) => item.public_id !== listing.public_id).slice(0, 3) ?? [];
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const isSale = listing.purpose === "sale";
   const structuredData =
@@ -114,14 +115,8 @@ export default async function ListingPage({ params }: PageProps) {
             <h1>{animal.name}</h1>
             <p className="detail-subtitle">{listing.title}</p>
             <div className="price-line">
-              {formatListingPrice(
-                listing.purpose,
-                listing.price_kopecks,
-                listing.negotiable,
-              )}
-              {listing.negotiable && listing.price_kopecks !== null && (
-                <small>возможен торг</small>
-              )}
+              {formatListingPrice(listing.purpose, listing.price_kopecks, listing.negotiable)}
+              {listing.negotiable && listing.price_kopecks !== null && <small>возможен торг</small>}
             </div>
             <div className="detail-location">
               {listing.city && (
@@ -163,8 +158,8 @@ export default async function ListingPage({ params }: PageProps) {
             <div className="privacy-note">
               <ShieldIcon width={18} height={18} />
               <span>
-                Телефон, почта и Telegram владельца скрыты. Не отправляйте
-                предоплату до личной встречи и проверки документов.
+                Телефон, почта и Telegram владельца скрыты. Не отправляйте предоплату до личной
+                встречи и проверки документов.
               </span>
             </div>
 
@@ -205,7 +200,9 @@ export default async function ListingPage({ params }: PageProps) {
               </div>
               <div>
                 <dt>Документы</dt>
-                <dd>{animal.has_pedigree_document ? "Загружены, видны модератору" : "Не загружены"}</dd>
+                <dd>
+                  {animal.has_pedigree_document ? "Загружены, видны модератору" : "Не загружены"}
+                </dd>
               </div>
             </dl>
           </aside>
@@ -239,8 +236,7 @@ export default async function ListingPage({ params }: PageProps) {
             )}
             {animal.has_pedigree && (
               <div className="notice">
-                <strong>Родословная:</strong>{" "}
-                {animal.pedigree_registry ?? "реестр не указан"}
+                <strong>Родословная:</strong> {animal.pedigree_registry ?? "реестр не указан"}
                 {animal.has_pedigree_document
                   ? ". Документ загружен и доступен модерации."
                   : ". Документ не загружен."}
@@ -253,9 +249,9 @@ export default async function ListingPage({ params }: PageProps) {
             <div>
               <h3>Как безопасно договориться</h3>
               <p>
-                Встречайтесь в людном месте, проверяйте документы и состояние
-                животного. Не переводите деньги до личной встречи. Если объявление
-                кажется подозрительным, напишите в поддержку.
+                Встречайтесь в людном месте, проверяйте документы и состояние животного. Не
+                переводите деньги до личной встречи. Если объявление кажется подозрительным,
+                напишите в поддержку.
               </p>
               <Link href="/support#safety" className="text-link">
                 Правила безопасной сделки <ArrowIcon width={15} height={15} />
@@ -271,10 +267,7 @@ export default async function ListingPage({ params }: PageProps) {
                 <span className="eyebrow">Рядом</span>
                 <h2>Похожие объявления</h2>
               </div>
-              <Link
-                href={`/search?species=${animal.species}`}
-                className="btn btn-secondary btn-sm"
-              >
+              <Link href={`/search?species=${animal.species}`} className="btn btn-secondary btn-sm">
                 Смотреть всех <ArrowIcon width={16} height={16} />
               </Link>
             </div>

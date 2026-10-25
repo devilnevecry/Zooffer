@@ -47,8 +47,8 @@ export function MiniSubscription() {
 
       {!current.payments_available && (
         <p className="tg-hint">
-          Telegram Stars появится в Mini App после подключения платёжного провайдера.
-          Сейчас списаний нет.
+          Telegram Stars появится в Mini App после подключения платёжного провайдера. Сейчас
+          списаний нет.
         </p>
       )}
 

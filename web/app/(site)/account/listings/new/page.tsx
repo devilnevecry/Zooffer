@@ -29,8 +29,7 @@ export default async function NewListingPage() {
           <span className="eyebrow">Мастер размещения</span>
           <h1>Новое объявление</h1>
           <p className="muted">
-            Черновик сохраняется на сервере после каждого шага. Вернуться можно с
-            любого устройства.
+            Черновик сохраняется на сервере после каждого шага. Вернуться можно с любого устройства.
           </p>
         </div>
         <Link href="/account/listings" className="btn btn-ghost btn-sm">

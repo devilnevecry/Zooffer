@@ -266,7 +266,9 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
 
   const direction = leaving ?? (drag.x > 42 ? "like" : drag.x < -42 ? "skip" : null);
   const quotaPercent =
-    quota && quota.limit > 0 ? Math.max(0, Math.min(100, (quota.remaining / quota.limit) * 100)) : 0;
+    quota && quota.limit > 0
+      ? Math.max(0, Math.min(100, (quota.remaining / quota.limit) * 100))
+      : 0;
 
   return (
     <div className="discovery-page">
@@ -286,8 +288,8 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
         {!user && (
           <div className="guest-banner">
             <div>
-              <strong>Это гостевой просмотр.</strong> Чтобы сохранять выбор и
-              переписываться, создайте аккаунт.
+              <strong>Это гостевой просмотр.</strong> Чтобы сохранять выбор и переписываться,
+              создайте аккаунт.
             </div>
             <div className="btn-row">
               <Link href="/register?next=/discovery" className="btn btn-primary btn-sm">
@@ -446,8 +448,8 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
                   </button>
                 </div>
                 <p className="deck-hint">
-                  Перетащите карточку, используйте кнопки или клавиши <kbd>←</kbd>{" "}
-                  <kbd>→</kbd> · <kbd>F</kbd> — в избранное · <kbd>Z</kbd> — отменить
+                  Перетащите карточку, используйте кнопки или клавиши <kbd>←</kbd> <kbd>→</kbd> ·{" "}
+                  <kbd>F</kbd> — в избранное · <kbd>Z</kbd> — отменить
                 </p>
               </>
             ) : (
@@ -455,8 +457,8 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
                 <PawIcon width={44} height={44} />
                 <h2>На сегодня всё</h2>
                 <p>
-                  Вы посмотрели все подходящие объявления. Загляните позже — новые
-                  истории появляются каждый день.
+                  Вы посмотрели все подходящие объявления. Загляните позже — новые истории
+                  появляются каждый день.
                 </p>
                 <Link href="/search" className="btn btn-secondary">
                   Перейти к поиску
@@ -486,7 +488,9 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
                   </div>
                   <div>
                     <dt>Возраст</dt>
-                    <dd>{current.age_years !== null ? formatAge(current.age_years) : "Не указан"}</dd>
+                    <dd>
+                      {current.age_years !== null ? formatAge(current.age_years) : "Не указан"}
+                    </dd>
                   </div>
                   <div>
                     <dt>Город</dt>
@@ -515,8 +519,7 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
                 </Link>
                 <div className="privacy-note">
                   <ShieldIcon width={18} height={18} />
-                  Мы не показываем телефоны и Telegram. Начните с сообщения внутри
-                  Zooffer.
+                  Мы не показываем телефоны и Telegram. Начните с сообщения внутри Zooffer.
                 </div>
               </>
             ) : (
@@ -539,14 +542,10 @@ export function DiscoveryDeck({ initialFeed }: { initialFeed: DiscoveryFeed | nu
         </div>
       </div>
 
-      <Modal
-        open={Boolean(match)}
-        onClose={() => setMatch(null)}
-        title="Это взаимно"
-      >
+      <Modal open={Boolean(match)} onClose={() => setMatch(null)} title="Это взаимно">
         <p className="modal-lead">
-          Вам понравился {match?.name}, и владелец тоже ответил симпатией. Можно
-          начинать разговор — контакты остаются внутри платформы.
+          Вам понравился {match?.name}, и владелец тоже ответил симпатией. Можно начинать разговор —
+          контакты остаются внутри платформы.
         </p>
         <div className="btn-row">
           {match && (

@@ -47,9 +47,7 @@ async def _promote(db, public_id: str, role: str = "admin") -> None:
     await db.commit()
 
 
-async def test_mfa_setup_confirm_login_and_disable(
-    client: AsyncClient, monkeypatch
-) -> None:
+async def test_mfa_setup_confirm_login_and_disable(client: AsyncClient, monkeypatch) -> None:
     monkeypatch.setattr(auth_service, "datetime", _FrozenDatetime)
     monkeypatch.setattr(pyotp.totp, "datetime", SimpleNamespace(datetime=_FrozenDatetime))
     monkeypatch.setattr(_FrozenDatetime, "offset", timedelta(0))
@@ -71,9 +69,7 @@ async def test_mfa_setup_confirm_login_and_disable(
     assert me.status_code == 200
     assert me.json()["user"]["mfa_enabled"] is True
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    ) as fresh:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as fresh:
         no_code = await fresh.post(
             "/api/v1/auth/login",
             json={"email": "mfa@example.com", "password": "Correct horse battery staple"},
@@ -104,9 +100,7 @@ async def test_mfa_setup_confirm_login_and_disable(
             "/api/v1/auth/mfa/disable", json={"code": pyotp.TOTP(secret).now()}
         )
         assert disable.status_code == 200, disable.text
-        assert (
-            await fresh.get("/api/v1/auth/me")
-        ).json()["user"]["mfa_enabled"] is False
+        assert (await fresh.get("/api/v1/auth/me")).json()["user"]["mfa_enabled"] is False
     assert user["public_id"]
 
 
@@ -114,9 +108,7 @@ async def test_admin_rbac_moderation_and_audit(client: AsyncClient, db) -> None:
     user = await register(client, "moderator@example.com")
     setup = await client.post("/api/v1/auth/mfa/setup")
     secret = setup.json()["secret"]
-    await client.post(
-        "/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()}
-    )
+    await client.post("/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()})
 
     denied = await client.get("/api/v1/admin/dashboard")
     assert denied.status_code == 403
@@ -166,15 +158,11 @@ async def test_admin_rbac_moderation_and_audit(client: AsyncClient, db) -> None:
     assert "listing.reject" in actions
 
 
-async def test_admin_reports_users_settings_support_and_rbac(
-    client: AsyncClient, db
-) -> None:
+async def test_admin_reports_users_settings_support_and_rbac(client: AsyncClient, db) -> None:
     owner = await register(client, "owner-admin@example.com")
     setup = await client.post("/api/v1/auth/mfa/setup")
     secret = setup.json()["secret"]
-    await client.post(
-        "/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()}
-    )
+    await client.post("/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()})
     await _promote(db, owner["public_id"], "admin")
 
     report = Report(
@@ -225,15 +213,11 @@ async def test_admin_reports_users_settings_support_and_rbac(
 
     settings = await client.get("/api/v1/admin/settings")
     assert settings.status_code == 200
-    put = await client.put(
-        "/api/v1/admin/settings/free_daily_swipes", json={"value": "25"}
-    )
+    put = await client.put("/api/v1/admin/settings/free_daily_swipes", json={"value": "25"})
     assert put.status_code == 403
 
     await _promote(db, owner["public_id"], "superadmin")
-    put = await client.put(
-        "/api/v1/admin/settings/free_daily_swipes", json={"value": "25"}
-    )
+    put = await client.put("/api/v1/admin/settings/free_daily_swipes", json={"value": "25"})
     assert put.status_code == 200, put.text
     assert put.json()["value"] == "25"
 
@@ -246,12 +230,8 @@ async def test_expired_mfa_login_is_rejected(client: AsyncClient) -> None:
     await register(client, "expired@example.com")
     setup = await client.post("/api/v1/auth/mfa/setup")
     secret = setup.json()["secret"]
-    await client.post(
-        "/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()}
-    )
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    ) as fresh:
+    await client.post("/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()})
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as fresh:
         response = await fresh.post(
             "/api/v1/auth/login",
             json={

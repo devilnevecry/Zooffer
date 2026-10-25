@@ -28,11 +28,7 @@ export function MiniFavorites() {
           </Link>
         }
       />
-      <FavoriteManager
-        initial={items}
-        listingPath="/tg/listing"
-        discoveryPath="/tg"
-      />
+      <FavoriteManager initial={items} listingPath="/tg/listing" discoveryPath="/tg" />
     </div>
   );
 }

@@ -75,10 +75,7 @@ export function SubscriptionManager({
       }
       router.push(`${checkoutPath}?order=${order.public_id}`);
     } catch (err) {
-      showToast(
-        err instanceof ClientApiError ? err.message : "Не удалось создать платёж",
-        "error",
-      );
+      showToast(err instanceof ClientApiError ? err.message : "Не удалось создать платёж", "error");
       setPaying(null);
     }
   };
@@ -100,9 +97,7 @@ export function SubscriptionManager({
           </p>
         </div>
         <div className="subscription-quota">
-          <strong>
-            {state.quota_unlimited ? "∞" : state.quota_limit}
-          </strong>
+          <strong>{state.quota_unlimited ? "∞" : state.quota_limit}</strong>
           <span>{state.quota_unlimited ? "свайпов без лимита" : "свайпов в день"}</span>
         </div>
         {active && !state.cancel_at_period_end && (
@@ -131,8 +126,8 @@ export function SubscriptionManager({
         <div className="notice warn">
           <ShieldIcon width={18} height={18} />
           <span>
-            Включён демонстрационный режим оплаты. Реальные деньги не списываются, карта
-            не запрашивается. Такой платёж нужен только для проверки сценария.
+            Включён демонстрационный режим оплаты. Реальные деньги не списываются, карта не
+            запрашивается. Такой платёж нужен только для проверки сценария.
           </span>
         </div>
       )}
@@ -172,46 +167,43 @@ export function SubscriptionManager({
           {plans
             .filter((plan) => plan.price_kopecks > 0)
             .map((plan) => {
-            const current = state.plan_code === plan.code && active;
-            return (
-              <article className="plan-card featured" key={plan.code}>
-                {plan.is_placeholder_price && (
-                  <span className="plan-flag">Цена до запуска</span>
-                )}
-                <h3>{plan.name}</h3>
-                <p className="plan-price">{formatPrice(plan.price_kopecks)}</p>
-                <p className="muted">
-                  за {plan.period_days} дней
-                  {plan.stars_amount ? ` · ${plan.stars_amount} Stars` : ""}
-                </p>
-                <p>{plan.description}</p>
-                <ul className="plan-list">
-                  {plan.entitlements.map((code) => (
-                    <li key={code}>
-                      <CheckIcon width={15} height={15} />{" "}
-                      {entitlementLabels[code] ?? code}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => void startCheckout(plan.code)}
-                  disabled={!state.payments_available || current || paying !== null}
-                >
-                  {current
-                    ? "Подключено"
-                    : paying === plan.code
-                      ? "Создаём платёж…"
-                      : state.payments_available
-                        ? state.payments_demo
-                          ? "Демо-оплата"
-                          : "Перейти к оплате"
-                        : "Оплата недоступна"}
-                </button>
-              </article>
-            );
-          })}
+              const current = state.plan_code === plan.code && active;
+              return (
+                <article className="plan-card featured" key={plan.code}>
+                  {plan.is_placeholder_price && <span className="plan-flag">Цена до запуска</span>}
+                  <h3>{plan.name}</h3>
+                  <p className="plan-price">{formatPrice(plan.price_kopecks)}</p>
+                  <p className="muted">
+                    за {plan.period_days} дней
+                    {plan.stars_amount ? ` · ${plan.stars_amount} Stars` : ""}
+                  </p>
+                  <p>{plan.description}</p>
+                  <ul className="plan-list">
+                    {plan.entitlements.map((code) => (
+                      <li key={code}>
+                        <CheckIcon width={15} height={15} /> {entitlementLabels[code] ?? code}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => void startCheckout(plan.code)}
+                    disabled={!state.payments_available || current || paying !== null}
+                  >
+                    {current
+                      ? "Подключено"
+                      : paying === plan.code
+                        ? "Создаём платёж…"
+                        : state.payments_available
+                          ? state.payments_demo
+                            ? "Демо-оплата"
+                            : "Перейти к оплате"
+                          : "Оплата недоступна"}
+                  </button>
+                </article>
+              );
+            })}
         </div>
       </section>
 
@@ -224,14 +216,12 @@ export function SubscriptionManager({
         </div>
         <div className="legal-summary">
           <p>
-            Подписка не продлевается автоматически: новые платежи не списываются без
-            вашей оплаты. Отменить подписку можно в этом разделе — доступ сохранится до
-            конца оплаченного периода.
+            Подписка не продлевается автоматически: новые платежи не списываются без вашей оплаты.
+            Отменить подписку можно в этом разделе — доступ сохранится до конца оплаченного периода.
           </p>
           <p>
-            Платёжные данные вводятся только на стороне платёжного провайдера. Zooffer
-            не хранит номера карт. Чеки и возвраты регулируются офертой и
-            законодательством РФ.
+            Платёжные данные вводятся только на стороне платёжного провайдера. Zooffer не хранит
+            номера карт. Чеки и возвраты регулируются офертой и законодательством РФ.
           </p>
           <Link href={legalPath} className="text-link">
             Условия подписки и возврата

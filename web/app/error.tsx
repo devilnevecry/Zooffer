@@ -12,8 +12,8 @@ export default function RootError({
         <span className="eyebrow">Ошибка</span>
         <h1>Сервис временно недоступен</h1>
         <p>
-          Попробуйте обновить страницу. Если проблема сохраняется, вернитесь позже или
-          напишите в поддержку.
+          Попробуйте обновить страницу. Если проблема сохраняется, вернитесь позже или напишите в
+          поддержку.
         </p>
         <div className="btn-row">
           <button type="button" className="btn btn-primary" onClick={reset}>

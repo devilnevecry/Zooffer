@@ -183,7 +183,7 @@ async def public_listing(slug: str, db: DbSession) -> dict:
 async def homepage(db: DbSession) -> dict:
     featured = await listing_service.get_featured_listings(db, limit=8)
     categories = await listing_service.get_categories(db)
-    recent = []
+    recent: list[listing_service.PublicListingCardView] = []
     if not featured:
         recent, _, _ = await listing_service.search_public_listings(db, ListingFilters(), limit=8)
     return {

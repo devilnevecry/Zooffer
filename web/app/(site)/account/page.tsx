@@ -100,7 +100,11 @@ export default async function AccountOverviewPage() {
                   <span className="grow">
                     <strong>{listing.title}</strong>
                     <small>
-                      {formatListingPrice(listing.purpose, listing.price_kopecks, listing.negotiable)}
+                      {formatListingPrice(
+                        listing.purpose,
+                        listing.price_kopecks,
+                        listing.negotiable,
+                      )}
                     </small>
                   </span>
                   <StatusChip status={listing.status} />
@@ -165,9 +169,7 @@ export default async function AccountOverviewPage() {
           <ChatIcon />
           <div>
             <strong>Перейти в сообщения</strong>
-            <span>
-              {unreadMessages > 0 ? `${unreadMessages} непрочитанных` : "Всё прочитано"}
-            </span>
+            <span>{unreadMessages > 0 ? `${unreadMessages} непрочитанных` : "Всё прочитано"}</span>
           </div>
           <ArrowIcon width={18} height={18} />
         </Link>

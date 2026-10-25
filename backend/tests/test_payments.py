@@ -62,17 +62,13 @@ async def _create_paid_order(client: AsyncClient, plan_code: str) -> dict:
     created = await client.post("/api/v1/billing/orders", json={"plan_code": plan_code})
     assert created.status_code == 201, created.text
     order = created.json()
-    confirmed = await client.post(
-        f"/api/v1/billing/orders/{order['public_id']}/demo-confirm"
-    )
+    confirmed = await client.post(f"/api/v1/billing/orders/{order['public_id']}/demo-confirm")
     assert confirmed.status_code == 200, confirmed.text
     assert confirmed.json()["status"] == "paid"
     return confirmed.json()
 
 
-async def test_order_creation_demo_confirmation_and_idempotency(
-    client: AsyncClient, db
-) -> None:
+async def test_order_creation_demo_confirmation_and_idempotency(client: AsyncClient, db) -> None:
     await register(client, "buyer@example.com")
     await _plan(db)
 
@@ -95,15 +91,11 @@ async def test_order_creation_demo_confirmation_and_idempotency(
     assert reused.status_code == 201
     assert reused.json()["public_id"] == order["public_id"]
 
-    confirmed = await client.post(
-        f"/api/v1/billing/orders/{order['public_id']}/demo-confirm"
-    )
+    confirmed = await client.post(f"/api/v1/billing/orders/{order['public_id']}/demo-confirm")
     assert confirmed.status_code == 200, confirmed.text
     assert confirmed.json()["status"] == "paid"
 
-    again = await client.post(
-        f"/api/v1/billing/orders/{order['public_id']}/demo-confirm"
-    )
+    again = await client.post(f"/api/v1/billing/orders/{order['public_id']}/demo-confirm")
     assert again.status_code == 200
     assert again.json()["status"] == "paid"
 
@@ -136,9 +128,7 @@ async def test_order_creation_demo_confirmation_and_idempotency(
     assert refreshed.current_period_end > utcnow()
 
 
-async def test_webhook_signature_amount_and_order_ownership(
-    client: AsyncClient, db
-) -> None:
+async def test_webhook_signature_amount_and_order_ownership(client: AsyncClient, db) -> None:
     await register(client, "webhook@example.com")
     await _plan(db)
     created = await client.post("/api/v1/billing/orders", json={"plan_code": "plus"})
@@ -161,9 +151,7 @@ async def test_webhook_signature_amount_and_order_ownership(
         currency=currency,
     )
     bad_headers["X-Fake-Signature"] = "00" * 32
-    bad = await client.post(
-        "/api/v1/billing/webhooks/fake", content=bad_body, headers=bad_headers
-    )
+    bad = await client.post("/api/v1/billing/webhooks/fake", content=bad_body, headers=bad_headers)
     assert bad.status_code == 400
     assert bad.json()["error"]["code"] == "invalid_signature"
 
@@ -206,9 +194,7 @@ async def test_webhook_signature_amount_and_order_ownership(
     assert ok.status_code == 200, ok.text
     assert ok.json()["result"] == "paid"
 
-    duplicate = await client.post(
-        "/api/v1/billing/webhooks/fake", content=body, headers=headers
-    )
+    duplicate = await client.post("/api/v1/billing/webhooks/fake", content=body, headers=headers)
     assert duplicate.status_code == 200
     assert duplicate.json()["result"] == "duplicate"
 
@@ -256,9 +242,7 @@ async def test_payments_unavailable_and_plan_validation(
     assert missing.json()["error"]["code"] == "plan_not_found"
 
 
-async def test_admin_payment_detail_refund_grant_and_reconcile(
-    client: AsyncClient, db
-) -> None:
+async def test_admin_payment_detail_refund_grant_and_reconcile(client: AsyncClient, db) -> None:
     await register(client, "admin-pay@example.com")
     plan = await _plan(db)
     plan_id = plan.id
@@ -295,9 +279,7 @@ async def test_admin_payment_detail_refund_grant_and_reconcile(
     current = await client.get("/api/v1/billing/subscription")
     assert current.json()["status"] in {"expired", "canceled"}
     db.expire_all()
-    subscription = await db.scalar(
-        select(Subscription).where(Subscription.plan_id == plan_id)
-    )
+    subscription = await db.scalar(select(Subscription).where(Subscription.plan_id == plan_id))
     assert subscription is not None
     assert subscription.status == "canceled"
 
@@ -342,16 +324,12 @@ async def test_demo_confirm_requires_fake_mode_and_ownership(
 
     async with extra_client() as other:
         await register(other, "demo-other@example.com")
-        foreign = await other.post(
-            f"/api/v1/billing/orders/{order['public_id']}/demo-confirm"
-        )
+        foreign = await other.post(f"/api/v1/billing/orders/{order['public_id']}/demo-confirm")
         assert foreign.status_code == 404
 
     monkeypatch.setattr(settings, "payment_provider", "yookassa")
     monkeypatch.setattr(settings, "yookassa_shop_id", "shop")
     monkeypatch.setattr(settings, "yookassa_secret_key", "secret")
-    denied = await client.post(
-        f"/api/v1/billing/orders/{order['public_id']}/demo-confirm"
-    )
+    denied = await client.post(f"/api/v1/billing/orders/{order['public_id']}/demo-confirm")
     assert denied.status_code == 404
     assert denied.json()["error"]["code"] == "demo_payment_unavailable"

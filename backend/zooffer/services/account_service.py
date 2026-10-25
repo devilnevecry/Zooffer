@@ -71,9 +71,7 @@ async def export_user_data(db: AsyncSession, user: User) -> dict[str, Any]:
         ).all():
             photos.setdefault(photo.animal_id, []).append(photo)
         for document in (
-            await db.scalars(
-                select(AnimalDocument).where(AnimalDocument.animal_id.in_(animal_ids))
-            )
+            await db.scalars(select(AnimalDocument).where(AnimalDocument.animal_id.in_(animal_ids)))
         ).all():
             documents.setdefault(document.animal_id, []).append(document)
 
@@ -84,11 +82,7 @@ async def export_user_data(db: AsyncSession, user: User) -> dict[str, Any]:
             )
         ).all()
     )
-    favorites = list(
-        (
-            await db.scalars(select(Favorite).where(Favorite.user_id == user.id))
-        ).all()
-    )
+    favorites = list((await db.scalars(select(Favorite).where(Favorite.user_id == user.id))).all())
     favorite_listings = []
     for favorite in favorites:
         listing = await db.get(Listing, favorite.listing_id)
@@ -115,9 +109,7 @@ async def export_user_data(db: AsyncSession, user: User) -> dict[str, Any]:
     )
     match_items = []
     for match in matches:
-        partner_animal_id = (
-            match.animal_b_id if match.owner_a_id == user.id else match.animal_a_id
-        )
+        partner_animal_id = match.animal_b_id if match.owner_a_id == user.id else match.animal_a_id
         partner_animal = await db.get(Animal, partner_animal_id)
         if partner_animal is None:
             continue
@@ -186,9 +178,7 @@ async def export_user_data(db: AsyncSession, user: User) -> dict[str, Any]:
             )
         ).all()
     )
-    consents = list(
-        (await db.scalars(select(Consent).where(Consent.user_id == user.id))).all()
-    )
+    consents = list((await db.scalars(select(Consent).where(Consent.user_id == user.id))).all())
 
     return {
         "format": "zooffer-account-export",
@@ -340,14 +330,10 @@ async def delete_account(db: AsyncSession, user: User, confirmation: str) -> Non
         delete(Block).where(or_(Block.blocker_id == user.id, Block.blocked_id == user.id))
     )
 
-    for listing in (
-        await db.scalars(select(Listing).where(Listing.owner_id == user.id))
-    ).all():
+    for listing in (await db.scalars(select(Listing).where(Listing.owner_id == user.id))).all():
         listing.status = ListingStatus.ARCHIVED.value
         listing.archived_at = now
-    for animal in (
-        await db.scalars(select(Animal).where(Animal.owner_id == user.id))
-    ).all():
+    for animal in (await db.scalars(select(Animal).where(Animal.owner_id == user.id))).all():
         animal.archived_at = now
     for subscription in (
         await db.scalars(
@@ -400,6 +386,7 @@ async def unblock(db: AsyncSession, user_id: UUID, block_id: UUID) -> None:
         raise ValidationAppError("Блокировка не найдена", code="block_not_found")
     await db.delete(block)
     await db.commit()
+
 
 async def create_support_ticket(
     db: AsyncSession,

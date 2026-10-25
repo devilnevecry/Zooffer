@@ -92,9 +92,7 @@ class PaymentProvider(Protocol):
         metadata: dict[str, str],
     ) -> PaymentIntent: ...
 
-    async def verify_webhook(
-        self, headers: dict[str, str], body: bytes
-    ) -> VerifiedEvent: ...
+    async def verify_webhook(self, headers: dict[str, str], body: bytes) -> VerifiedEvent: ...
 
     async def fetch_payment(self, provider_payment_id: str) -> ProviderState: ...
 
@@ -195,9 +193,7 @@ class FakePaymentProvider:
         signature = hmac.new(self._secret(), raw, hashlib.sha256).hexdigest()
         return {"X-Fake-Signature": signature}, raw
 
-    async def verify_webhook(
-        self, headers: dict[str, str], body: bytes
-    ) -> VerifiedEvent:
+    async def verify_webhook(self, headers: dict[str, str], body: bytes) -> VerifiedEvent:
         received = headers.get("x-fake-signature", "")
         expected = hmac.new(self._secret(), body, hashlib.sha256).hexdigest()
         if not received or not hmac.compare_digest(received, expected):
@@ -320,9 +316,7 @@ class YooKassaProvider:
             raw=data,
         )
 
-    async def verify_webhook(
-        self, headers: dict[str, str], body: bytes
-    ) -> VerifiedEvent:
+    async def verify_webhook(self, headers: dict[str, str], body: bytes) -> VerifiedEvent:
         del headers
         try:
             payload = json.loads(body)
@@ -343,12 +337,13 @@ class YooKassaProvider:
         if event_type.startswith("refund."):
             payment_id = str(obj.get("payment_id") or payment_id)
             status = "refunded"
-        metadata = obj.get("metadata") if isinstance(obj.get("metadata"), dict) else {}
-        amount = obj.get("amount") if isinstance(obj.get("amount"), dict) else {}
+        raw_metadata = obj.get("metadata")
+        metadata: dict[str, Any] = raw_metadata if isinstance(raw_metadata, dict) else {}
+        raw_amount = obj.get("amount")
+        amount: dict[str, Any] = raw_amount if isinstance(raw_amount, dict) else {}
         try:
-            amount_kopecks = (
-                round(float(amount.get("value")) * 100) if amount.get("value") else None
-            )
+            amount_value = amount.get("value")
+            amount_kopecks = round(float(amount_value) * 100) if amount_value is not None else None
         except (TypeError, ValueError):
             amount_kopecks = None
         return VerifiedEvent(
@@ -374,11 +369,11 @@ class YooKassaProvider:
             raise PaymentProviderError(
                 "Could not verify the YooKassa payment", code="payment_fetch_failed"
             ) from exc
-        amount = data.get("amount") if isinstance(data.get("amount"), dict) else {}
+        raw_amount = data.get("amount")
+        amount: dict[str, Any] = raw_amount if isinstance(raw_amount, dict) else {}
         try:
-            amount_kopecks = (
-                round(float(amount.get("value")) * 100) if amount.get("value") else None
-            )
+            amount_value = amount.get("value")
+            amount_kopecks = round(float(amount_value) * 100) if amount_value is not None else None
         except (TypeError, ValueError):
             amount_kopecks = None
         status = str(data.get("status") or "pending").lower()

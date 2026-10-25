@@ -5,14 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "./auth-provider";
-import {
-  BellIcon,
-  ChatIcon,
-  HeartIcon,
-  PlusIcon,
-  SearchIcon,
-  UserIcon,
-} from "./icons";
+import { BellIcon, ChatIcon, HeartIcon, PlusIcon, SearchIcon, UserIcon } from "./icons";
 import { Wordmark } from "./wordmark";
 import { api } from "@/lib/client";
 import { initials } from "@/lib/format";
@@ -94,9 +87,7 @@ export function SiteHeader() {
                 href="/account/notifications"
                 className="icon-button"
                 aria-label={
-                  unreadCount > 0
-                    ? `Уведомления, непрочитанных: ${unreadCount}`
-                    : "Уведомления"
+                  unreadCount > 0 ? `Уведомления, непрочитанных: ${unreadCount}` : "Уведомления"
                 }
               >
                 <BellIcon />

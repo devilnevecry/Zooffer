@@ -70,9 +70,7 @@ async def _complete_onboarding(
     name = await services.public_name_for(db, user)
     target = message or bot
     if isinstance(target, Message):
-        await target.answer(
-            texts.welcome_text(name), reply_markup=persistent_keyboard(config)
-        )
+        await target.answer(texts.welcome_text(name), reply_markup=persistent_keyboard(config))
     else:
         await bot.send_message(
             chat_id=chat_id,
@@ -97,9 +95,7 @@ async def _start_or_resume(
         await state.clear()
         await services.link_telegram_chat(db, user, chat_id=message.chat.id)
         name = await services.public_name_for(db, user)
-        await message.answer(
-            texts.welcome_text(name), reply_markup=persistent_keyboard(config)
-        )
+        await message.answer(texts.welcome_text(name), reply_markup=persistent_keyboard(config))
         await send_main_menu(message, user, db, config)
         return
     suggested = None
@@ -289,9 +285,7 @@ async def _create_account_from_name(
     except AppError as exc:
         await message.answer(exc.message)
         return
-    await _complete_onboarding(
-        bot, message.chat.id, message, state, db, user, config
-    )
+    await _complete_onboarding(bot, message.chat.id, message, state, db, user, config)
 
 
 @router.callback_query(F.data, StateFilter(Onboarding.name))
@@ -323,17 +317,13 @@ async def onboarding_use_suggested(
     data = await state.get_data()
     suggested = data.get("suggested_name")
     if not isinstance(suggested, str) or not suggested:
-        await safe_callback_answer(
-            callback, "Напишите имя сообщением.", show_alert=True
-        )
+        await safe_callback_answer(callback, "Напишите имя сообщением.", show_alert=True)
         return
     await safe_callback_answer(callback)
     if callback.message is None:
         return
     await callback.message.edit_reply_markup(reply_markup=None)
-    await _create_account_from_name(
-        callback.message, state, db, tg_user, bot, config, suggested
-    )
+    await _create_account_from_name(callback.message, state, db, tg_user, bot, config, suggested)
 
 
 @router.message(StateFilter(Onboarding.name), F.text)
@@ -348,6 +338,4 @@ async def onboarding_name(
     if tg_user is None:
         await message.answer(texts.generic_error_text())
         return
-    await _create_account_from_name(
-        message, state, db, tg_user, bot, config, message.text or ""
-    )
+    await _create_account_from_name(message, state, db, tg_user, bot, config, message.text or "")

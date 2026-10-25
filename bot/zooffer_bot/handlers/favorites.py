@@ -26,9 +26,7 @@ async def show_favorites(
     user: User,
 ) -> None:
     items = await services.favorites(db, user)
-    labels = [
-        (str(listing.public_id), animal.name or listing.title) for listing, animal in items
-    ]
+    labels = [(str(listing.public_id), animal.name or listing.title) for listing, animal in items]
     await message.answer(
         texts.favorites_text(len(items)),
         reply_markup=favorites_keyboard(labels),

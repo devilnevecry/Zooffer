@@ -48,9 +48,7 @@ REUSE_ORDER_MINUTES = 15
 def payment_mode() -> str:
     if settings.payment_provider == "yookassa":
         return (
-            "live"
-            if settings.yookassa_shop_id and settings.yookassa_secret_key
-            else "unavailable"
+            "live" if settings.yookassa_shop_id and settings.yookassa_secret_key else "unavailable"
         )
     if settings.payment_provider == "fake" and settings.environment in {"dev", "test"}:
         return "demo"
@@ -83,9 +81,7 @@ def _return_url(order_id: UUID) -> str:
     return f"{base}/account/subscription/checkout?order={order_id}"
 
 
-async def create_order(
-    db: AsyncSession, user: User, plan_code: str
-) -> BillingOrderView:
+async def create_order(db: AsyncSession, user: User, plan_code: str) -> BillingOrderView:
     if not payments_available():
         raise ValidationAppError(
             "Онлайн-оплата пока недоступна. Попробуйте позже или напишите в поддержку.",
@@ -93,9 +89,7 @@ async def create_order(
         )
     plan = await _plan(db, plan_code)
     if plan.price_kopecks <= 0:
-        raise ValidationAppError(
-            "Этот тариф не требует оплаты", code="free_plan_not_purchasable"
-        )
+        raise ValidationAppError("Этот тариф не требует оплаты", code="free_plan_not_purchasable")
     if settings.is_production and plan.is_placeholder_price:
         raise ValidationAppError(
             "Цена тарифа ещё не утверждена. Оплата временно недоступна.",
@@ -185,9 +179,7 @@ async def list_orders(db: AsyncSession, user: User) -> list[BillingOrderView]:
 
 async def get_order(db: AsyncSession, user: User, order_id: UUID) -> BillingOrderView:
     order = await db.scalar(
-        select(PaymentOrder).where(
-            PaymentOrder.id == order_id, PaymentOrder.user_id == user.id
-        )
+        select(PaymentOrder).where(PaymentOrder.id == order_id, PaymentOrder.user_id == user.id)
     )
     if order is None:
         raise NotFoundError("Платёж не найден", code="order_not_found")
@@ -267,9 +259,7 @@ async def cancel_subscription(db: AsyncSession, user: User) -> SubscriptionView:
         .limit(1)
     )
     if subscription is None:
-        raise ValidationAppError(
-            "Активной подписки нет", code="subscription_not_found"
-        )
+        raise ValidationAppError("Активной подписки нет", code="subscription_not_found")
     subscription.cancel_at_period_end = True
     subscription.canceled_at = utcnow()
     await db.commit()
@@ -303,9 +293,7 @@ async def _record_event(
     return await db.scalar(statement)
 
 
-async def _mark_event_error(
-    db: AsyncSession, event_id: UUID, message: str
-) -> None:
+async def _mark_event_error(db: AsyncSession, event_id: UUID, message: str) -> None:
     event_row = await db.get(PaymentEvent, event_id)
     if event_row is not None:
         event_row.error = message[:500]
@@ -356,8 +344,7 @@ async def _activate_subscription(
         )
         subscription.current_period_start = (
             subscription.current_period_start
-            if subscription.current_period_end is not None
-            and subscription.current_period_end > now
+            if subscription.current_period_end is not None and subscription.current_period_end > now
             else now
         )
         subscription.current_period_end = base + timedelta(days=plan.period_days)
@@ -369,18 +356,13 @@ async def _activate_subscription(
         order.user_id,
         category="subscriptions",
         title="Подписка активирована",
-        body=(
-            f"Тариф «{plan.name}» действует до "
-            f"{subscription.current_period_end:%d.%m.%Y}."
-        ),
+        body=(f"Тариф «{plan.name}» действует до {subscription.current_period_end:%d.%m.%Y}."),
         data={"order_id": str(order.id)},
     )
     return subscription
 
 
-async def _revoke_subscription(
-    db: AsyncSession, user_id: UUID, *, reason: str
-) -> None:
+async def _revoke_subscription(db: AsyncSession, user_id: UUID, *, reason: str) -> None:
     subscription = await db.scalar(
         select(Subscription)
         .where(
@@ -440,9 +422,7 @@ async def process_webhook(
         )
     if order is None and event.order_id is not None:
         order = await db.scalar(
-            select(PaymentOrder)
-            .where(PaymentOrder.id == event.order_id)
-            .with_for_update()
+            select(PaymentOrder).where(PaymentOrder.id == event.order_id).with_for_update()
         )
     if order is None:
         raise NotFoundError("Заказ для платежа не найден", code="payment_order_not_found")
@@ -538,15 +518,11 @@ async def process_webhook(
     return result
 
 
-async def demo_confirm(
-    db: AsyncSession, user: User, order_id: UUID
-) -> BillingOrderView:
+async def demo_confirm(db: AsyncSession, user: User, order_id: UUID) -> BillingOrderView:
     if not payments_demo():
         raise NotFoundError("Демо-оплата недоступна", code="demo_payment_unavailable")
     order = await db.scalar(
-        select(PaymentOrder).where(
-            PaymentOrder.id == order_id, PaymentOrder.user_id == user.id
-        )
+        select(PaymentOrder).where(PaymentOrder.id == order_id, PaymentOrder.user_id == user.id)
     )
     if order is None:
         raise NotFoundError("Платёж не найден", code="order_not_found")
@@ -555,9 +531,7 @@ async def demo_confirm(
     if order.status == "paid":
         return await order_view(db, order)
     if order.status not in {"created", "pending"}:
-        raise ValidationAppError(
-            "Этот платёж уже нельзя подтвердить", code="order_not_payable"
-        )
+        raise ValidationAppError("Этот платёж уже нельзя подтвердить", code="order_not_payable")
     if order.provider_payment_id is None:
         raise ValidationAppError("Платёж не инициализирован", code="order_invalid")
     provider = get_payment_provider("fake")
@@ -577,9 +551,7 @@ async def demo_confirm(
     return await order_view(db, refreshed)
 
 
-async def admin_payment_detail(
-    db: AsyncSession, order_id: UUID
-) -> AdminPaymentDetailView:
+async def admin_payment_detail(db: AsyncSession, order_id: UUID) -> AdminPaymentDetailView:
     order = await db.get(PaymentOrder, order_id)
     if order is None:
         raise NotFoundError("Платёж не найден", code="order_not_found")
@@ -767,7 +739,9 @@ async def reconcile(db: AsyncSession) -> dict[str, int]:
     )
     active_count = int(
         await db.scalar(
-            select(func.count()).select_from(Subscription).where(
+            select(func.count())
+            .select_from(Subscription)
+            .where(
                 Subscription.status.in_(["active", "past_due"]),
                 Subscription.current_period_end.is_not(None),
                 Subscription.current_period_end > now,

@@ -1,6 +1,6 @@
 # Architecture
 
-> Status: Phase 1 baseline, updated as phases land. See `IMPLEMENTATION_PLAN.md` for progress.
+> Status: current implementation. See `IMPLEMENTATION_PLAN.md` for progress and evidence.
 
 ## System context
 
@@ -51,10 +51,9 @@ backend/
   tests/              unit + integration tests
 bot/                  aiogram application (thin)
 web/                  Next.js App Router (website + /tg Mini App)
-packages/ui/          design tokens shared by website and Mini App (same Next app imports it)
-infra/                compose, Caddy, backup and deploy scripts
+infra/                PostgreSQL init script for the local Compose stack
+scripts/              demo seed, local CI launcher and operational helpers
 docs/                 product/engineering documentation
-tests/e2e/            Playwright end-to-end tests
 ```
 
 ## Backend layering
@@ -107,19 +106,19 @@ index, so concurrent likes cannot create duplicate or missing matches.
 
 ## Storage and media
 
-A `MediaStorage` interface has a local-filesystem adapter for development and an S3-compatible
-adapter for production. Uploads are sniffed by content, size/dimension limited, re-encoded with
-Pillow to strip EXIF/GPS and remove embedded payloads, and written under server-generated keys.
-Public media is served from a separate cookieless origin in production; private documents are served
-through short-lived signed URLs after an authorization check.
+A `MediaStorage` protocol has a local-filesystem adapter used in development and tests. Uploads are
+sniffed by content, size/dimension limited, re-encoded with Pillow to strip EXIF/GPS and remove
+embedded payloads, and written under server-generated keys. An S3-compatible adapter and
+short-lived signed URLs for private documents are **not implemented**; production object storage is
+blocked (B9), so the current build must not be described as production-ready for media.
 
 ## Observability and operations
 
 Structured JSON logs with request/correlation IDs and PII minimisation, Prometheus metrics on a
 protected endpoint, `/healthz` and `/readyz`, and self-hosted error tracking or none — no Russian
-personal data is sent to foreign SaaS without a documented legal basis. Production runs behind Caddy
-with TLS, HSTS, CSP and request limits; containers run non-root with read-only filesystems where
-practical.
+personal data is sent to foreign SaaS without a documented legal basis. The production target runs
+behind Caddy with TLS, HSTS, CSP and request limits; that deployment is not configured yet (B7).
+Containers run non-root with read-only filesystems where practical.
 
 ## Deliberate non-goals in the first pass
 

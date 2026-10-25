@@ -578,4 +578,3 @@ export interface AdminPaymentDetail {
   payment_id: string | null;
   events: AdminPaymentEvent[];
 }
-

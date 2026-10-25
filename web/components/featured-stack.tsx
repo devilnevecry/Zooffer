@@ -46,9 +46,7 @@ export function FeaturedStack({ items }: { items: ListingCard[] }) {
     );
   }
 
-  const visible = [0, 1, 2]
-    .map((offset) => items[(index + offset) % items.length])
-    .filter(Boolean);
+  const visible = [0, 1, 2].map((offset) => items[(index + offset) % items.length]).filter(Boolean);
 
   const decide = (direction: "like" | "skip") => {
     if (leaving) return;
@@ -156,7 +154,9 @@ export function FeaturedStack({ items }: { items: ListingCard[] }) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={listing.primary_photo.url}
-                    alt={listing.primary_photo.alt ?? `${listing.animal_name}, ${listing.breed ?? ""}`}
+                    alt={
+                      listing.primary_photo.alt ?? `${listing.animal_name}, ${listing.breed ?? ""}`
+                    }
                     width={listing.primary_photo.width}
                     height={listing.primary_photo.height}
                     draggable={false}
@@ -183,7 +183,11 @@ export function FeaturedStack({ items }: { items: ListingCard[] }) {
                   </p>
                   <div className="stack-price-row">
                     <strong>
-                      {formatListingPrice(listing.purpose, listing.price_kopecks, listing.negotiable)}
+                      {formatListingPrice(
+                        listing.purpose,
+                        listing.price_kopecks,
+                        listing.negotiable,
+                      )}
                     </strong>
                     {isTop && (
                       <Link

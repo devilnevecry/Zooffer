@@ -81,9 +81,7 @@ export function MiniChats() {
                     : "Диалог открыт — напишите первым"}
                 </span>
               </span>
-              {chat.unread_count > 0 && (
-                <span className="chat-unread">{chat.unread_count}</span>
-              )}
+              {chat.unread_count > 0 && <span className="chat-unread">{chat.unread_count}</span>}
               {chat.blocked && <span className="chip chip-danger">Блок</span>}
             </Link>
           ))}

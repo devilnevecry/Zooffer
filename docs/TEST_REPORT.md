@@ -1,26 +1,37 @@
 # Test report
 
 Updated: 2026-10-25. Environment: Windows 11, Python 3.12.7, PostgreSQL 16 in Docker, pytest
-`backend/tests`, ruff, Next.js 16 build.
+`backend/tests`, ruff, bandit, Next.js 16 build.
 
 ## Command
 
 ```powershell
-$env:PYTHONPATH='backend'
-.venv\Scripts\python -m pytest backend\tests -q
+.\scripts\ci.ps1
 ```
+
+The script mirrors the GitHub Actions pipeline. Individual commands are listed in
+[CONTRIBUTING.md](../CONTRIBUTING.md#checks-before-a-pull-request).
 
 ## Latest result
 
 ```
-74 passed in 281.89s (0:04:41)
+[1] Ruff lint                 PASS
+[2] Ruff format check         PASS (111 files formatted)
+[3] Mypy (shared backend)     PASS (71 files)
+[4] Bandit (SAST)             PASS (exit 0)
+[5] pytest (PostgreSQL)       PASS - 74 passed in 287.2s
+[6] Web type check            PASS
+[7] Web lint                  PASS
+[8] Web format check          PASS
+[9] Web production build      PASS (56 routes)
 
-ruff check backend scripts bot: All checks passed
-python -m compileall bot: passed
-cd web && npm run typecheck: passed
-cd web && npm run lint: passed
-cd web && npm run build: passed (56 routes)
+pip-audit: no known vulnerabilities
+npm audit --audit-level=high: 0 vulnerabilities
+gitleaks v8.24.0 (Docker): no leaks found
 ```
+
+`gitleaks` is not installed as a native binary on this host, so it was run through its official
+container image; the local script skips it with an explicit message, while CI always runs it.
 
 ## Coverage by area
 
@@ -58,6 +69,10 @@ cd web && npm run build: passed (56 routes)
 - No browser e2e/Playwright, Mini App, or bot transport tests against a live Telegram API.
 - Live Telegram/YooKassa/Stars/email are `BLOCKED`; tests use fakes/fixtures.
 - YooKassa adapter has not been run against a sandbox shop.
+- Bot modules are not covered by mypy because aiogram's `Message | InaccessibleMessage` unions need
+  narrowing work; the shared backend is type-checked.
+- `pip-audit` runs as an advisory CI job (`continue-on-error`) so a newly disclosed CVE cannot block
+  an unrelated pull request silently; review its output on each dependency change.
 - Windows timings are slow (~2s connection overhead under Docker); not a correctness signal.
 
 ## Manual verification

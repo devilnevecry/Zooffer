@@ -1,0 +1,10 @@
+# Default owner for everything in this repository.
+* @devilnevecry
+
+# Security-sensitive areas require the owner as reviewer.
+/backend/zooffer/services/auth_service.py @devilnevecry
+/backend/zooffer/services/billing_service.py @devilnevecry
+/backend/zooffer/services/payments.py @devilnevecry
+/backend/zooffer/api/v1/admin.py @devilnevecry
+/bot/zooffer_bot/callbacks.py @devilnevecry
+/.github/ @devilnevecry

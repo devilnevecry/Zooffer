@@ -5,17 +5,30 @@ exists, so this is not a production penetration test.
 
 ## Automated checks actually run
 
+All gates below were executed locally on 2026-10-25 with `scripts/ci.ps1` after dependency upgrades.
+
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `pytest backend\tests -q` | **74 passed** |
-| Python lint/security rules | `ruff check backend scripts bot` | All checks passed |
-| Python byte-compile (bot) | `compileall bot` | Passed |
+| Backend tests | `pytest backend\tests -q` | **74 passed** (287 s) |
+| Python lint | `ruff check backend scripts bot` | All checks passed |
+| Python formatting | `ruff format --check backend scripts bot` | 111 files already formatted |
+| Python types | `mypy backend\zooffer` | Success, 71 files |
+| SAST | `bandit -q -r backend\zooffer bot\zooffer_bot -x tests -ll` | Exit 0; 6 reviewed `# nosec` justifications |
 | Web typecheck | `npm run typecheck` | Passed |
 | Web lint | `npm run lint` | Passed |
+| Web formatting | `npm run format:check` | Passed |
 | Web production build | `npm run build` | Passed, 56 routes |
+| Python dependency audit | `pip-audit --progress-spinner off` | No known vulnerabilities |
+| JavaScript dependency audit | `npm audit --audit-level=high` | 0 vulnerabilities |
+| Secret scan | `gitleaks detect` (v8.24.0, Docker) | No leaks found |
 
-Not run in this environment: ZAP baseline, Bandit, `npm audit`, dependency CVE scan, Playwright e2e,
-load tests. These remain open items; see `docs/KNOWN_ISSUES.md`.
+Dependency upgrades made after the first audit: FastAPI 0.115.6 → 0.162.0 (Starlette 1.10.0),
+`cryptography` 44.0.0 → 50.0.2, `python-multipart` 0.0.20 → 0.0.32, `aiosmtplib` 3.0.2 → 5.1.3,
+pytest 9.1.1 and pytest-asyncio 1.4.0. The full backend suite passes on the upgraded set.
+
+Not run in this environment: ZAP baseline, Playwright e2e, load/concurrency tests, container image
+scanning, and any live Telegram/YooKassa/SMTP exchange. These remain open items; see
+`docs/KNOWN_ISSUES.md`.
 
 ## Implemented controls (with evidence)
 
@@ -81,13 +94,13 @@ load tests. These remain open items; see `docs/KNOWN_ISSUES.md`.
 |---|---|---|---|
 | R1 | High | Live Telegram and payment integrations are unverified; webhook delivery, Stars invoices and YooKassa sandbox behaviour are unproven | `BLOCKED` (B2–B5) |
 | R2 | High | YooKassa notifications are unsigned; reverse-proxy IP allow-listing and egress controls are not configured | Open; code re-fetches payments |
-| R3 | Medium | No automated dependency/vulnerability scan or ZAP baseline was run | Open |
+| R3 | Medium | Dependency audit now runs (`pip-audit`, `npm audit`) and is clean for the pinned set; no container image scan or ZAP baseline yet | Partially mitigated |
 | R4 | Medium | No load/concurrency stress test for quota or webhooks | Open |
 | R5 | Medium | In-process bot update queue is not durable; crashes can drop updates | Accepted for local; durable queue pending |
 | R6 | Medium | Legal documents and retention schedule are templates | `BLOCKED` (B8) |
 | R7 | Low | Demo seed data uses generated placeholder photos; never present as real animals | Accepted and labelled |
 | R8 | Low | Demo payments are enabled in dev/test only and clearly labelled | Accepted |
-| R9 | Low | `npm audit`/Bandit were not available in the offline toolchain | Open |
+| R9 | Low | SAST/secret scans are clean, but the bot's aiogram-union typing is not enforced by mypy | Open; backend typing gate is clean |
 
 ## Production hardening checklist
 
@@ -95,7 +108,7 @@ load tests. These remain open items; see `docs/KNOWN_ISSUES.md`.
 - [ ] `COOKIE_SECURE=true`, HTTPS everywhere, HSTS and security headers at the proxy.
 - [ ] Reverse-proxy IP allow-list for YooKassa notifications.
 - [ ] Rotate bot token, webhook secret and payment keys; store in a secret manager.
-- [ ] Enable dependency scanning and container image scanning in CI.
+- [ ] Add container image scanning to CI; dependency audits (`pip-audit`, `npm audit`) already run.
 - [ ] Configure alerting for webhook failures, 5xx rate and auth throttling.
 - [ ] Run ZAP baseline and a fresh-clone acceptance test before launch.
 - [ ] Complete legal review and data-retention approval.

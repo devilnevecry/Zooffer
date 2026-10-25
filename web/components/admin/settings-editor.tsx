@@ -46,9 +46,7 @@ export function SettingsEditor({
         method: "PUT",
         body: { value },
       });
-      setItems((current) =>
-        current.map((entry) => (entry.key === updated.key ? updated : entry)),
-      );
+      setItems((current) => current.map((entry) => (entry.key === updated.key ? updated : entry)));
       setDraft((current) => {
         const copy = { ...current };
         delete copy[item.key];
@@ -56,7 +54,10 @@ export function SettingsEditor({
       });
       showToast("Настройка сохранена", "success");
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось сохранить настройку", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось сохранить настройку",
+        "error",
+      );
     } finally {
       setSavingKey(null);
     }
@@ -66,8 +67,8 @@ export function SettingsEditor({
     <div className="settings-stack">
       {!canWrite && (
         <p className="notice compact-notice">
-          Изменять системные настройки может только суперадминистратор. Значения
-          доступны для чтения.
+          Изменять системные настройки может только суперадминистратор. Значения доступны для
+          чтения.
         </p>
       )}
       {items.map((item) => {

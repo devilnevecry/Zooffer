@@ -94,9 +94,7 @@ async def test_report_missing_target_is_not_found(client: AsyncClient) -> None:
     assert response.json()["error"]["code"] == "listing_not_found"
 
 
-async def test_message_report_requires_participation_and_is_unique(
-    client: AsyncClient, db
-) -> None:
+async def test_message_report_requires_participation_and_is_unique(client: AsyncClient, db) -> None:
     await register(client, "chat-owner@example.com")
     async with extra_client() as reporter_client:
         await register(reporter_client, "reporter-chat@example.com")
@@ -113,9 +111,7 @@ async def test_message_report_requires_participation_and_is_unique(
         db.add_all(
             [
                 ConversationParticipant(conversation_id=conversation.id, user_id=owner.id),
-                ConversationParticipant(
-                    conversation_id=conversation.id, user_id=reporter.id
-                ),
+                ConversationParticipant(conversation_id=conversation.id, user_id=reporter.id),
             ]
         )
         message = Message(

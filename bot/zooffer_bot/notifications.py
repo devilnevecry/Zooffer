@@ -188,9 +188,7 @@ async def run_once(
             delivery.last_error = "bot_blocked"
             await db.commit()
             outcome.failed += 1
-            logger.info(
-                "bot_notification_blocked", extra={"notification_id": str(notification.id)}
-            )
+            logger.info("bot_notification_blocked", extra={"notification_id": str(notification.id)})
         except TelegramRetryAfter as exc:
             delivery.status = "deferred"
             delivery.last_error = f"retry_after:{exc.retry_after}"[:400]
@@ -232,9 +230,7 @@ async def run_worker(bot: Bot, config: BotConfig) -> None:
     while True:
         try:
             async with SessionLocal() as session:
-                outcome = await run_once(
-                    session, bot, config, limit=config.notification_batch_size
-                )
+                outcome = await run_once(session, bot, config, limit=config.notification_batch_size)
                 if outcome.sent or outcome.deferred or outcome.failed:
                     logger.info(
                         "bot_notifications_delivered",

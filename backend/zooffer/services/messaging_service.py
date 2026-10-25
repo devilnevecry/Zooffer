@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from zooffer.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationAppError
@@ -450,8 +450,6 @@ async def unblock_counterpart(db: AsyncSession, user: User, conversation_public_
     if counterpart_id is None:
         raise NotFoundError("Пользователь не найден", code="counterpart_not_found")
     await db.execute(
-        Block.__table__.delete().where(
-            Block.blocker_id == user.id, Block.blocked_id == counterpart_id
-        )
+        delete(Block).where(Block.blocker_id == user.id, Block.blocked_id == counterpart_id)
     )
     await db.commit()

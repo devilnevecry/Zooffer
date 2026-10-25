@@ -80,9 +80,7 @@ async def support_message(
     data = await state.get_data()
     subject = str(data.get("support_subject") or "")
     try:
-        ticket = await services.create_support_ticket(
-            db, user, subject=subject, message=value
-        )
+        ticket = await services.create_support_ticket(db, user, subject=subject, message=value)
     except AppError as exc:
         await message.answer(exc.message, reply_markup=support_cancel())
         return
@@ -91,9 +89,7 @@ async def support_message(
 
 
 @router.callback_query(F.data.startswith(prefix("sup:")))
-async def support_cancel_callback(
-    callback: CallbackQuery, state: FSMContext
-) -> None:
+async def support_cancel_callback(callback: CallbackQuery, state: FSMContext) -> None:
     parts = unpack(callback.data, 2)
     if parts is None or parts[0] != "sup":
         await safe_callback_answer(callback, "Кнопка устарела.")

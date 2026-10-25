@@ -31,8 +31,8 @@ export default async function AdminPaymentsPage() {
           <span className="eyebrow">Биллинг</span>
           <h1>Платежи</h1>
           <p className="muted">
-            Реальные платежи не подключены без merchant-credentials. Здесь отображаются
-            только сохранённые заказы, включая тестовые.
+            Реальные платежи не подключены без merchant-credentials. Здесь отображаются только
+            сохранённые заказы, включая тестовые.
           </p>
         </div>
       </div>
@@ -62,10 +62,7 @@ export default async function AdminPaymentsPage() {
                 <td>{formatPrice(item.amount_kopecks)}</td>
                 <td>{item.paid_at ? formatDateTime(item.paid_at) : "—"}</td>
                 <td>
-                  <Link
-                    href={`/admin/payments/${item.public_id}`}
-                    className="btn btn-ghost btn-sm"
-                  >
+                  <Link href={`/admin/payments/${item.public_id}`} className="btn btn-ghost btn-sm">
                     Открыть
                   </Link>
                 </td>

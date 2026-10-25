@@ -21,9 +21,10 @@ def photo_url_usable(url: str | None) -> bool:
     if not url or not url.startswith(("http://", "https://")):
         return False
     lowered = url.lower()
+    # Reject URLs pointing at loopback or wildcard hosts.
     return not any(
         host in lowered
-        for host in ("localhost", "127.0.0.1", "0.0.0.0")  # noqa: S104 - blocklist
+        for host in ("localhost", "127.0.0.1", "0.0.0.0")  # noqa: S104  # nosec B104
     )
 
 
@@ -60,17 +61,13 @@ async def send_listing_detail(bot: Bot, chat_id: int, listing) -> None:
     url = photos[0].url if photos else None
     if photo_url_usable(url) and len(text) <= 1024:
         try:
-            await bot.send_photo(
-                chat_id=chat_id, photo=url, caption=text, reply_markup=markup
-            )
+            await bot.send_photo(chat_id=chat_id, photo=url, caption=text, reply_markup=markup)
             return
         except TelegramBadRequest:
             pass
     if photo_url_usable(url):
         with contextlib.suppress(TelegramBadRequest):
-            await bot.send_photo(
-                chat_id=chat_id, photo=url, caption=escape(listing.title)
-            )
+            await bot.send_photo(chat_id=chat_id, photo=url, caption=escape(listing.title))
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=markup)
 
 
@@ -102,9 +99,7 @@ async def send_main_menu_to_bot(
     )
 
 
-async def ensure_onboarded(
-    message: Message, user: User | None, state, config: BotConfig
-) -> bool:
+async def ensure_onboarded(message: Message, user: User | None, state, config: BotConfig) -> bool:
     """Send consent prompt when the chat has no account yet. Returns whether ready."""
     if user is not None:
         return True

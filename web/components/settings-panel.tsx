@@ -68,9 +68,7 @@ export function SettingsPanel({
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(user.mfa_enabled);
-  const [mfaSetup, setMfaSetup] = useState<{ secret: string; otpauth_url: string } | null>(
-    null,
-  );
+  const [mfaSetup, setMfaSetup] = useState<{ secret: string; otpauth_url: string } | null>(null);
   const [mfaCode, setMfaCode] = useState("");
   const [mfaBusy, setMfaBusy] = useState(false);
 
@@ -93,7 +91,10 @@ export function SettingsPanel({
       showToast("Профиль обновлён", "success");
       router.refresh();
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось сохранить профиль", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось сохранить профиль",
+        "error",
+      );
     } finally {
       setSavingProfile(false);
     }
@@ -110,22 +111,19 @@ export function SettingsPanel({
   const savePreferences = async () => {
     setSavingPrefs(true);
     try {
-      const updated = await api<NotificationPreferenceList>(
-        "/api/v1/notification-preferences",
-        {
-          method: "PUT",
-          body: {
-            items: prefs.map((item) => ({
-              category: item.category,
-              in_app: item.in_app,
-              telegram: item.telegram,
-              email: item.email,
-              quiet_from: item.quiet_from,
-              quiet_to: item.quiet_to,
-            })),
-          },
+      const updated = await api<NotificationPreferenceList>("/api/v1/notification-preferences", {
+        method: "PUT",
+        body: {
+          items: prefs.map((item) => ({
+            category: item.category,
+            in_app: item.in_app,
+            telegram: item.telegram,
+            email: item.email,
+            quiet_from: item.quiet_from,
+            quiet_to: item.quiet_to,
+          })),
         },
-      );
+      });
       setPrefs(updated.items);
       showToast("Настройки уведомлений сохранены", "success");
     } catch (err) {
@@ -148,7 +146,10 @@ export function SettingsPanel({
         showToast("Сеанс завершён");
       }
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось завершить сеанс", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось завершить сеанс",
+        "error",
+      );
     }
   };
 
@@ -159,17 +160,19 @@ export function SettingsPanel({
       router.push(loginPath);
       router.refresh();
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось завершить сеансы", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось завершить сеансы",
+        "error",
+      );
     }
   };
 
   const beginMfa = async () => {
     setMfaBusy(true);
     try {
-      const setup = await api<{ secret: string; otpauth_url: string }>(
-        "/api/v1/auth/mfa/setup",
-        { method: "POST" },
-      );
+      const setup = await api<{ secret: string; otpauth_url: string }>("/api/v1/auth/mfa/setup", {
+        method: "POST",
+      });
       setMfaSetup(setup);
       setMfaCode("");
     } catch (err) {
@@ -226,10 +229,7 @@ export function SettingsPanel({
       showToast("Двухфакторная аутентификация отключена");
       router.refresh();
     } catch (err) {
-      showToast(
-        err instanceof ClientApiError ? err.message : "Не удалось отключить 2FA",
-        "error",
-      );
+      showToast(err instanceof ClientApiError ? err.message : "Не удалось отключить 2FA", "error");
     } finally {
       setMfaBusy(false);
     }
@@ -241,7 +241,10 @@ export function SettingsPanel({
       setBlockedUsers((items) => items.filter((entry) => entry.id !== item.id));
       showToast("Блокировка снята");
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось снять блокировку", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось снять блокировку",
+        "error",
+      );
     }
   };
 
@@ -291,7 +294,10 @@ export function SettingsPanel({
       router.push(afterDeletePath);
       router.refresh();
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось удалить аккаунт", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось удалить аккаунт",
+        "error",
+      );
       setDeleting(false);
     }
   };
@@ -385,8 +391,8 @@ export function SettingsPanel({
           ))}
         </div>
         <p className="field-hint">
-          E-mail доставляется только после настройки почтового провайдера. Тихие часы
-          настраиваются в боте и Mini App.
+          E-mail доставляется только после настройки почтового провайдера. Тихие часы настраиваются
+          в боте и Mini App.
         </p>
         <button
           type="button"
@@ -409,7 +415,8 @@ export function SettingsPanel({
         {mfaEnabled ? (
           <div className="mfa-box">
             <p className="notice compact-notice">
-              <strong>2FA включена.</strong> При входе понадобится код из приложения-аутентификатора.
+              <strong>2FA включена.</strong> При входе понадобится код из
+              приложения-аутентификатора.
             </p>
             <div className="inline-field">
               <input
@@ -431,14 +438,16 @@ export function SettingsPanel({
               </button>
             </div>
             <p className="field-hint">
-              Для отключения нужен свежий код. Если код уже использовался при входе,
-              дождитесь следующего.
+              Для отключения нужен свежий код. Если код уже использовался при входе, дождитесь
+              следующего.
             </p>
           </div>
         ) : mfaSetup ? (
           <div className="mfa-box">
             <ol className="mfa-steps">
-              <li>Откройте приложение-аутентификатор (например, Aegis или Google Authenticator).</li>
+              <li>
+                Откройте приложение-аутентификатор (например, Aegis или Google Authenticator).
+              </li>
               <li>
                 Добавьте аккаунт вручную и введите секрет:
                 <code className="mfa-secret">{mfaSetup.secret}</code>
@@ -513,9 +522,7 @@ export function SettingsPanel({
                   {session.device_label || "Неизвестное устройство"}
                   {session.is_current && <span className="chip chip-live">Текущий</span>}
                 </strong>
-                <small>
-                  Последняя активность: {formatDateTime(session.last_seen_at)}
-                </small>
+                <small>Последняя активность: {formatDateTime(session.last_seen_at)}</small>
                 {session.user_agent && <small>{session.user_agent}</small>}
               </span>
               {!session.is_current && (
@@ -591,8 +598,8 @@ export function SettingsPanel({
         <div className="privacy-note">
           <ShieldIcon width={18} height={18} />
           <span>
-            Статус прочтения сообщений не показывается другим пользователям, фото
-            профиля отсутствует, а контакты не передаются автоматически.
+            Статус прочтения сообщений не показывается другим пользователям, фото профиля
+            отсутствует, а контакты не передаются автоматически.
           </span>
         </div>
       </section>
@@ -640,8 +647,8 @@ export function SettingsPanel({
             </button>
           </div>
           <p className="field-hint">
-            Объявления и анкеты будут сняты. Платёжные документы, которые закон требует
-            хранить, останутся у платёжного провайдера без публичных данных.
+            Объявления и анкеты будут сняты. Платёжные документы, которые закон требует хранить,
+            останутся у платёжного провайдера без публичных данных.
           </p>
         </div>
       </section>

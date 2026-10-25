@@ -25,8 +25,7 @@ export const metadata: Metadata = {
     locale: "ru_RU",
     siteName: "Zooffer",
     title: "Zooffer — животные находят своих людей",
-    description:
-      "Подбор, объявления и переписка для тех, кто выбирает животное осознанно.",
+    description: "Подбор, объявления и переписка для тех, кто выбирает животное осознанно.",
   },
   twitter: {
     card: "summary_large_image",

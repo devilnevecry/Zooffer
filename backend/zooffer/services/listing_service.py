@@ -788,7 +788,9 @@ async def get_categories(db: AsyncSession) -> list[dict[str, Any]]:
         )
         .group_by(Listing.purpose)
     )
-    counts = dict(rows.all())
+    counts: dict[str, int] = {}
+    for purpose, count in rows.all():
+        counts[purpose] = count
     return [
         {"purpose": purpose.value, "count": counts.get(purpose.value, 0)}
         for purpose in ListingPurpose

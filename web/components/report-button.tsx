@@ -86,8 +86,8 @@ export function ReportButton({
       <Modal open={open} onClose={() => setOpen(false)} title="Пожаловаться модератору">
         <form onSubmit={submit}>
           <p className="modal-lead">
-            Расскажите, что не так. Жалоба не отправится владельцу, а попадёт в
-            очередь модерации Zooffer.
+            Расскажите, что не так. Жалоба не отправится владельцу, а попадёт в очередь модерации
+            Zooffer.
           </p>
           <div className="field">
             <label htmlFor="report-reason">Причина</label>

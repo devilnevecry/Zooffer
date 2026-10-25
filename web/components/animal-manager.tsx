@@ -137,7 +137,14 @@ export function AnimalManager({
     try {
       const photo = await api<OwnerAnimal["photos"][number]>(
         `/api/v1/animals/${animal.public_id}/photos`,
-        { method: "POST", formData: (() => { const data = new FormData(); data.append("file", file); return data; })() },
+        {
+          method: "POST",
+          formData: (() => {
+            const data = new FormData();
+            data.append("file", file);
+            return data;
+          })(),
+        },
       );
       setAnimals((items) =>
         items.map((item) =>
@@ -205,9 +212,7 @@ export function AnimalManager({
 
   const loadDocuments = async (animal: OwnerAnimal) => {
     try {
-      const result = await api<DocumentList>(
-        `/api/v1/animals/${animal.public_id}/documents`,
-      );
+      const result = await api<DocumentList>(`/api/v1/animals/${animal.public_id}/documents`);
       setDocuments((current) => ({ ...current, [animal.public_id]: result.items }));
     } catch {
       showToast("Не удалось загрузить документы", "error");
@@ -242,7 +247,9 @@ export function AnimalManager({
         <div className="empty-state">
           <PawIcon width={42} height={42} />
           <h2>Пока нет анкет животных</h2>
-          <p>Создайте анкету и объявление — фотографии, здоровье и документы будут в одном месте.</p>
+          <p>
+            Создайте анкету и объявление — фотографии, здоровье и документы будут в одном месте.
+          </p>
           <Link href="/account/listings/new" className="btn btn-primary">
             <PlusIcon /> Создать объявление
           </Link>
@@ -274,7 +281,9 @@ export function AnimalManager({
                   {animal.breed ? `, ${animal.breed}` : ""}
                 </h2>
                 <p className="muted">
-                  {animal.birth_date ? `Родился ${formatDate(animal.birth_date)}` : "Дата рождения не указана"}
+                  {animal.birth_date
+                    ? `Родился ${formatDate(animal.birth_date)}`
+                    : "Дата рождения не указана"}
                   {animal.colour ? ` · ${animal.colour}` : ""}
                   {animal.size !== "unknown" ? ` · ${sizeLabel(animal.size)}` : ""}
                 </p>
@@ -546,7 +555,9 @@ export function AnimalManager({
                   {documents[animal.public_id].map((document) => (
                     <li key={document.id}>
                       <DocumentIcon width={15} height={15} />
-                      {document.document_type === "pedigree" ? "Родословная" : document.document_type}
+                      {document.document_type === "pedigree"
+                        ? "Родословная"
+                        : document.document_type}
                       <span className="muted"> · {formatDate(document.created_at)}</span>
                     </li>
                   ))}

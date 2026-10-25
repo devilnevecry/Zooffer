@@ -50,7 +50,10 @@ export function SupportQueue({ initial }: { initial: AdminSupportList }) {
       setReply("");
       showToast("Ответ сохранён", "success");
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось отправить ответ", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось отправить ответ",
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -121,8 +124,8 @@ export function SupportQueue({ initial }: { initial: AdminSupportList }) {
                 </button>
               </div>
               <p className="field-hint">
-                Доставка e-mail и Telegram-сообщений зависит от настроенных каналов.
-                Ответ сохраняется в обращении в любом случае.
+                Доставка e-mail и Telegram-сообщений зависит от настроенных каналов. Ответ
+                сохраняется в обращении в любом случае.
               </p>
             </form>
           ) : (

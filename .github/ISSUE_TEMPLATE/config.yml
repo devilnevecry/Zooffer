@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/devilnevecry/Zooffer_final/security/advisories/new
+    about: Report vulnerabilities privately. Do not open a public issue.
+  - name: Documentation index
+    url: https://github.com/devilnevecry/Zooffer_final/blob/main/docs/README.md
+    about: Architecture, privacy, payments, Telegram, runbook and known issues.

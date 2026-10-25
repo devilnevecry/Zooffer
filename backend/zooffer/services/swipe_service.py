@@ -176,16 +176,20 @@ async def swipe(
     )
     if existing_request is not None:
         quota = await quota_service.get_quota(db, user.id)
-        match = await _find_match_for_swipe(db, user.id, target_animal.id)
-        conversation = await db.get(Conversation, match.conversation_id) if match else None
+        existing_match = await _find_match_for_swipe(db, user.id, target_animal.id)
+        existing_conversation = (
+            await db.get(Conversation, existing_match.conversation_id) if existing_match else None
+        )
         return SwipeResponse(
             action=SwipeAction(existing_request.action),
             remaining=quota.remaining,
             limit=quota.limit,
             resets_at=quota.resets_at,
             unlimited=quota.unlimited,
-            match_created=match is not None,
-            conversation_public_id=conversation.public_id if conversation else None,
+            match_created=existing_match is not None,
+            conversation_public_id=(
+                existing_conversation.public_id if existing_conversation else None
+            ),
         )
 
     existing_swipe = await db.scalar(
@@ -199,16 +203,18 @@ async def swipe(
         if existing_swipe.action != action.value:
             raise ConflictError("Решение уже принято", code="swipe_exists")
         quota = await quota_service.get_quota(db, user.id)
-        match = await _find_match_for_swipe(db, user.id, target_animal.id)
-        conversation = await db.get(Conversation, match.conversation_id) if match else None
+        replay_match = await _find_match_for_swipe(db, user.id, target_animal.id)
+        replay_conversation = (
+            await db.get(Conversation, replay_match.conversation_id) if replay_match else None
+        )
         return SwipeResponse(
             action=action,
             remaining=quota.remaining,
             limit=quota.limit,
             resets_at=quota.resets_at,
             unlimited=quota.unlimited,
-            match_created=match is not None,
-            conversation_public_id=conversation.public_id if conversation else None,
+            match_created=replay_match is not None,
+            conversation_public_id=(replay_conversation.public_id if replay_conversation else None),
         )
 
     swipe_id = uuid4()

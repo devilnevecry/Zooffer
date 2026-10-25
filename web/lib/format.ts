@@ -74,10 +74,7 @@ export function formatAge(age: number | null): string {
   return `${age} лет`;
 }
 
-export function ageFromBirthDate(
-  birthDate: string | null | undefined,
-  today: Date,
-): number | null {
+export function ageFromBirthDate(birthDate: string | null | undefined, today: Date): number | null {
   if (!birthDate) return null;
   const born = new Date(`${birthDate}T00:00:00Z`);
   if (Number.isNaN(born.getTime())) return null;

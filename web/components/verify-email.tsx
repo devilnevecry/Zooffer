@@ -9,12 +9,8 @@ import { api, ClientApiError } from "@/lib/client";
 export function VerifyEmail() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
-  const [state, setState] = useState<"loading" | "done" | "error">(
-    token ? "loading" : "error",
-  );
-  const [message, setMessage] = useState(
-    token ? "" : "В ссылке нет токена подтверждения.",
-  );
+  const [state, setState] = useState<"loading" | "done" | "error">(token ? "loading" : "error");
+  const [message, setMessage] = useState(token ? "" : "В ссылке нет токена подтверждения.");
   const started = useRef(false);
 
   useEffect(() => {

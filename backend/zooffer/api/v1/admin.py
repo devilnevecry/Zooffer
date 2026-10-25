@@ -214,7 +214,5 @@ async def revoke_entitlement(
 
 
 @router.get("/payments-reconcile", response_model=AdminReconcileView)
-async def reconcile_payments(
-    auth: PaymentsReadAuth, db: DbSession
-) -> AdminReconcileView:
+async def reconcile_payments(auth: PaymentsReadAuth, db: DbSession) -> AdminReconcileView:
     return AdminReconcileView(**await billing_service.reconcile(db))

@@ -55,7 +55,9 @@ export function InquiryButton({
       router.push(`${chatsPath}/${conversation.conversation.public_id}`);
     } catch (err) {
       setError(
-        err instanceof ClientApiError ? err.message : "Не удалось начать переписку. Попробуйте ещё раз.",
+        err instanceof ClientApiError
+          ? err.message
+          : "Не удалось начать переписку. Попробуйте ещё раз.",
       );
     } finally {
       setSending(false);
@@ -70,8 +72,8 @@ export function InquiryButton({
       <Modal open={open} onClose={() => setOpen(false)} title="Начать переписку">
         <form onSubmit={send}>
           <p className="modal-lead">
-            Сообщение придёт владельцу объявления. Не отправляйте предоплату и не
-            переходите по подозрительным ссылкам.
+            Сообщение придёт владельцу объявления. Не отправляйте предоплату и не переходите по
+            подозрительным ссылкам.
           </p>
           <div className="field">
             <label htmlFor="inquiry-message">Сообщение</label>

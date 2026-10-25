@@ -75,11 +75,7 @@ def main_menu(mini_app_url: str) -> InlineKeyboardMarkup:
 def consent_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Принимаю условия", callback_data=pack("onb", "accept")
-                )
-            ],
+            [InlineKeyboardButton(text="Принимаю условия", callback_data=pack("onb", "accept"))],
             [InlineKeyboardButton(text="Отмена", callback_data=pack("onb", "cancel"))],
         ]
     )
@@ -179,11 +175,7 @@ def match_keyboard(conversation_public_id: str) -> InlineKeyboardMarkup:
                     callback_data=pack("ch", "open", conversation_public_id),
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    text="Продолжить подбор", callback_data=pack("menu", "swipe")
-                )
-            ],
+            [InlineKeyboardButton(text="Продолжить подбор", callback_data=pack("menu", "swipe"))],
         ]
     )
 
@@ -203,11 +195,7 @@ def favorites_keyboard(items: list[tuple[str, str]]) -> InlineKeyboardMarkup:
 
 def chats_keyboard(items: list[tuple[str, str]]) -> InlineKeyboardMarkup:
     rows = [
-        [
-            InlineKeyboardButton(
-                text=label[:48], callback_data=pack("ch", "open", public_id)
-            )
-        ]
+        [InlineKeyboardButton(text=label[:48], callback_data=pack("ch", "open", public_id))]
         for public_id, label in items[:10]
     ]
     rows.append([InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))])
@@ -223,11 +211,7 @@ def chat_keyboard(conversation_public_id: str) -> InlineKeyboardMarkup:
                     callback_data=pack("ch", "reply", conversation_public_id),
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    text="Все диалоги", callback_data=pack("menu", "chats")
-                )
-            ],
+            [InlineKeyboardButton(text="Все диалоги", callback_data=pack("menu", "chats"))],
             [InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))],
         ]
     )
@@ -235,11 +219,7 @@ def chat_keyboard(conversation_public_id: str) -> InlineKeyboardMarkup:
 
 def listings_keyboard(items: list[tuple[str, str]]) -> InlineKeyboardMarkup:
     rows = [
-        [
-            InlineKeyboardButton(
-                text=label[:48], callback_data=pack("ml", "open", public_id)
-            )
-        ]
+        [InlineKeyboardButton(text=label[:48], callback_data=pack("ml", "open", public_id))]
         for public_id, label in items[:10]
     ]
     rows.append(
@@ -297,11 +277,7 @@ def listing_actions_keyboard(
             ]
         )
     rows.append(
-        [
-            InlineKeyboardButton(
-                text="Мои объявления", callback_data=pack("menu", "listings")
-            )
-        ]
+        [InlineKeyboardButton(text="Мои объявления", callback_data=pack("menu", "listings"))]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -324,9 +300,7 @@ def profile_keyboard(mini_app_url: str) -> InlineKeyboardMarkup:
     rows = [
         [
             InlineKeyboardButton(text="Настройки", callback_data=pack("menu", "settings")),
-            InlineKeyboardButton(
-                text="Подписка", callback_data=pack("menu", "subscription")
-            ),
+            InlineKeyboardButton(text="Подписка", callback_data=pack("menu", "subscription")),
         ],
         [InlineKeyboardButton(text="Поддержка", callback_data=pack("menu", "support"))],
         [InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))],
@@ -350,9 +324,7 @@ def settings_keyboard(telegram_on: bool) -> InlineKeyboardMarkup:
 def subscription_keyboard(has_plans: bool) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     if has_plans:
-        rows.append(
-            [InlineKeyboardButton(text="Выбрать план", callback_data=pack("menu", "buy"))]
-        )
+        rows.append([InlineKeyboardButton(text="Выбрать план", callback_data=pack("menu", "buy"))])
     rows.append([InlineKeyboardButton(text="Поддержка", callback_data=pack("menu", "support"))])
     rows.append([InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -360,11 +332,7 @@ def subscription_keyboard(has_plans: bool) -> InlineKeyboardMarkup:
 
 def plans_keyboard(plans: list[tuple[str, str]]) -> InlineKeyboardMarkup:
     rows = [
-        [
-            InlineKeyboardButton(
-                text=label[:48], callback_data=pack("buy", "plan", code[:24])
-            )
-        ]
+        [InlineKeyboardButton(text=label[:48], callback_data=pack("buy", "plan", code[:24]))]
         for code, label in plans[:8]
     ]
     rows.append([InlineKeyboardButton(text="Назад", callback_data=pack("menu", "subscription"))])
@@ -373,9 +341,7 @@ def plans_keyboard(plans: list[tuple[str, str]]) -> InlineKeyboardMarkup:
 
 def support_cancel() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Отмена", callback_data=pack("sup", "cancel"))]
-        ]
+        inline_keyboard=[[InlineKeyboardButton(text="Отмена", callback_data=pack("sup", "cancel"))]]
     )
 
 
@@ -418,15 +384,9 @@ def sex_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="Мальчик", callback_data=pack("pet", "sex", "male")),
-                InlineKeyboardButton(
-                    text="Девочка", callback_data=pack("pet", "sex", "female")
-                ),
+                InlineKeyboardButton(text="Девочка", callback_data=pack("pet", "sex", "female")),
             ],
-            [
-                InlineKeyboardButton(
-                    text="Неизвестно", callback_data=pack("pet", "sex", "unknown")
-                )
-            ],
+            [InlineKeyboardButton(text="Неизвестно", callback_data=pack("pet", "sex", "unknown"))],
             [InlineKeyboardButton(text="Отмена", callback_data=pack("pet", "cancel"))],
         ]
     )
@@ -462,11 +422,7 @@ def photo_keyboard() -> InlineKeyboardMarkup:
                     text="Добавить ещё фото", callback_data=pack("pet", "morephoto")
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    text="К публикации", callback_data=pack("pet", "readypublish")
-                )
-            ],
+            [InlineKeyboardButton(text="К публикации", callback_data=pack("pet", "readypublish"))],
             [InlineKeyboardButton(text="Отмена", callback_data=pack("pet", "cancel"))],
         ]
     )
@@ -475,8 +431,6 @@ def photo_keyboard() -> InlineKeyboardMarkup:
 def news_keyboard(channel_url: str) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     if channel_url.startswith("https://"):
-        rows.append(
-            [InlineKeyboardButton(text="Открыть канал", url=channel_url)]
-        )
+        rows.append([InlineKeyboardButton(text="Открыть канал", url=channel_url)])
     rows.append([InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))])
     return InlineKeyboardMarkup(inline_keyboard=rows)

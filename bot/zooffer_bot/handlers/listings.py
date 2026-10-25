@@ -90,8 +90,7 @@ async def show_listings(message: Message, db: AsyncSession, user: User) -> None:
     labels = [
         (
             str(listing.public_id),
-            f"{animal.name} · "
-            f"{texts.STATUS_LABELS.get(listing.status, listing.status)}",
+            f"{animal.name} · {texts.STATUS_LABELS.get(listing.status, listing.status)}",
         )
         for listing, animal, _has_photo in rows
     ]
@@ -149,9 +148,7 @@ async def cmd_addpet(
 @router.callback_query(
     F.data.startswith(prefix("pet:species:")), StateFilter(ListingWizard.species)
 )
-async def pet_species(
-    callback: CallbackQuery, state: FSMContext, user: User | None
-) -> None:
+async def pet_species(callback: CallbackQuery, state: FSMContext, user: User | None) -> None:
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
@@ -171,9 +168,7 @@ async def pet_species(
 
 
 @router.callback_query(F.data.startswith(prefix("pet:sex:")), StateFilter(ListingWizard.sex))
-async def pet_sex(
-    callback: CallbackQuery, state: FSMContext, user: User | None
-) -> None:
+async def pet_sex(callback: CallbackQuery, state: FSMContext, user: User | None) -> None:
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
@@ -197,15 +192,11 @@ async def pet_name(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(animal_name=value)
     await state.set_state(ListingWizard.birth)
-    await message.answer(
-        texts.wizard_birth_text(), reply_markup=skip_keyboard("skipbirth")
-    )
+    await message.answer(texts.wizard_birth_text(), reply_markup=skip_keyboard("skipbirth"))
 
 
 @router.callback_query(F.data.startswith(prefix("pet:skipbirth")), StateFilter(ListingWizard.birth))
-async def pet_skip_birth(
-    callback: CallbackQuery, state: FSMContext, user: User | None
-) -> None:
+async def pet_skip_birth(callback: CallbackQuery, state: FSMContext, user: User | None) -> None:
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
@@ -228,15 +219,11 @@ async def pet_birth(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(birth_date=birth.isoformat() if birth else None)
     await state.set_state(ListingWizard.city)
-    await message.answer(
-        texts.wizard_city_text(), reply_markup=skip_keyboard("skipcity")
-    )
+    await message.answer(texts.wizard_city_text(), reply_markup=skip_keyboard("skipcity"))
 
 
 @router.callback_query(F.data.startswith(prefix("pet:skipcity")), StateFilter(ListingWizard.city))
-async def pet_skip_city(
-    callback: CallbackQuery, state: FSMContext, user: User | None
-) -> None:
+async def pet_skip_city(callback: CallbackQuery, state: FSMContext, user: User | None) -> None:
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
@@ -245,22 +232,16 @@ async def pet_skip_city(
     await safe_callback_answer(callback)
     if callback.message is not None:
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(
-            texts.wizard_purpose_text(), reply_markup=purpose_keyboard()
-        )
+        await callback.message.answer(texts.wizard_purpose_text(), reply_markup=purpose_keyboard())
 
 
 @router.message(ListingWizard.city, F.text)
-async def pet_city(
-    message: Message, state: FSMContext, db: AsyncSession
-) -> None:
+async def pet_city(message: Message, state: FSMContext, db: AsyncSession) -> None:
     value = (message.text or "").strip()
     if value.lower() in {"пропустить", "skip", "-"}:
         await state.update_data(city_id=None, city_name=None)
         await state.set_state(ListingWizard.purpose)
-        await message.answer(
-            texts.wizard_purpose_text(), reply_markup=purpose_keyboard()
-        )
+        await message.answer(texts.wizard_purpose_text(), reply_markup=purpose_keyboard())
         return
     city = await services.find_city(db, value)
     if city is None:
@@ -271,17 +252,13 @@ async def pet_city(
         return
     await state.update_data(city_id=city.id, city_name=city.name)
     await state.set_state(ListingWizard.purpose)
-    await message.answer(
-        texts.wizard_purpose_text(), reply_markup=purpose_keyboard()
-    )
+    await message.answer(texts.wizard_purpose_text(), reply_markup=purpose_keyboard())
 
 
 @router.callback_query(
     F.data.startswith(prefix("pet:purpose:")), StateFilter(ListingWizard.purpose)
 )
-async def pet_purpose(
-    callback: CallbackQuery, state: FSMContext, user: User | None
-) -> None:
+async def pet_purpose(callback: CallbackQuery, state: FSMContext, user: User | None) -> None:
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
@@ -310,9 +287,7 @@ async def pet_title(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(title=value)
     await state.set_state(ListingWizard.description)
-    await message.answer(
-        texts.wizard_description_text(), reply_markup=skip_keyboard("skipdesc")
-    )
+    await message.answer(texts.wizard_description_text(), reply_markup=skip_keyboard("skipdesc"))
 
 
 @router.callback_query(
@@ -364,9 +339,7 @@ async def _after_description(
     data = await state.get_data()
     if data.get("purpose") == ListingPurpose.SALE.value:
         await state.set_state(ListingWizard.price)
-        await message.answer(
-            texts.wizard_price_text(), reply_markup=price_keyboard()
-        )
+        await message.answer(texts.wizard_price_text(), reply_markup=price_keyboard())
         return
     await _create_draft(message, state, db, user, bot)
 
@@ -426,9 +399,7 @@ async def _create_draft(
                 species=Species(data["species"]),
                 sex=Sex(data.get("sex", "unknown")),
                 birth_date=(
-                    date.fromisoformat(data["birth_date"])
-                    if data.get("birth_date")
-                    else None
+                    date.fromisoformat(data["birth_date"]) if data.get("birth_date") else None
                 ),
                 size=AnimalSize.UNKNOWN,
             ),
@@ -469,18 +440,14 @@ async def _create_draft(
     )
 
 
-async def _photo_count(
-    db: AsyncSession, user: User, listing_public_id: UUID
-) -> tuple[int, bool]:
+async def _photo_count(db: AsyncSession, user: User, listing_public_id: UUID) -> tuple[int, bool]:
     from sqlalchemy import func, select
     from zooffer.db.models import AnimalPhoto
 
     listing, animal, has_photo = await services.owned_listing(db, user, listing_public_id)
     del listing
     count = await db.scalar(
-        select(func.count())
-        .select_from(AnimalPhoto)
-        .where(AnimalPhoto.animal_id == animal.id)
+        select(func.count()).select_from(AnimalPhoto).where(AnimalPhoto.animal_id == animal.id)
     )
     return int(count or 0), has_photo
 
@@ -522,9 +489,7 @@ async def pet_photo(
         )
         return
     count, _ = await _photo_count(db, user, listing_public_id)
-    await message.answer(
-        texts.photo_added_text(count), reply_markup=photo_keyboard()
-    )
+    await message.answer(texts.photo_added_text(count), reply_markup=photo_keyboard())
 
 
 @router.message(ListingWizard.photos, F.text)
@@ -590,9 +555,7 @@ async def pet_more_photo(
         count = 0
         if listing_public_id is not None:
             count, _ = await _photo_count(db, user, listing_public_id)
-        await callback.message.answer(
-            texts.wizard_photo_text(count), reply_markup=photo_keyboard()
-        )
+        await callback.message.answer(texts.wizard_photo_text(count), reply_markup=photo_keyboard())
 
 
 @router.callback_query(
@@ -607,9 +570,7 @@ async def pet_ready_publish(
         return
     data = await state.get_data()
     raw_listing = data.get("listing_public_id")
-    listing_public_id = (
-        await services.parse_listing_public_id(raw_listing) if raw_listing else None
-    )
+    listing_public_id = await services.parse_listing_public_id(raw_listing) if raw_listing else None
     if listing_public_id is None:
         await safe_callback_answer(callback, "Черновик не найден. /addpet", show_alert=True)
         return
@@ -623,9 +584,7 @@ async def pet_ready_publish(
 
 
 @router.callback_query(F.data.startswith(prefix("pet:cancel")))
-async def pet_cancel(
-    callback: CallbackQuery, state: FSMContext, user: User | None
-) -> None:
+async def pet_cancel(callback: CallbackQuery, state: FSMContext, user: User | None) -> None:
     await state.clear()
     await safe_callback_answer(callback, "Отменено")
     if callback.message is not None:
@@ -661,9 +620,7 @@ async def listing_callback(
             await _send_owner_listing(callback.message, db, user, listing_public_id)
             return
         if action == "photo":
-            listing, animal, _has_photo = await services.owned_listing(
-                db, user, listing_public_id
-            )
+            listing, animal, _has_photo = await services.owned_listing(db, user, listing_public_id)
             await state.clear()
             await state.set_state(ListingWizard.photos)
             await state.update_data(
@@ -672,18 +629,12 @@ async def listing_callback(
                 listing_title=listing.title,
             )
             await safe_callback_answer(callback)
-            await callback.message.answer(
-                texts.wizard_photo_text(0), reply_markup=photo_keyboard()
-            )
+            await callback.message.answer(texts.wizard_photo_text(0), reply_markup=photo_keyboard())
             return
         if action == "pub":
-            listing, animal, has_photo = await services.owned_listing(
-                db, user, listing_public_id
-            )
+            listing, animal, has_photo = await services.owned_listing(db, user, listing_public_id)
             if not has_photo:
-                await safe_callback_answer(
-                    callback, texts.photo_required_text(), show_alert=True
-                )
+                await safe_callback_answer(callback, texts.photo_required_text(), show_alert=True)
                 return
             await safe_callback_answer(callback)
             await _send_publish_checklist(

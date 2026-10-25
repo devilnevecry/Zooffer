@@ -23,16 +23,12 @@ from zooffer.db.models import (
 from zooffer.schemas.report import ReportCreateRequest, ReportView
 
 
-async def _report_target(
-    db: AsyncSession, reporter: User, payload: ReportCreateRequest
-) -> None:
+async def _report_target(db: AsyncSession, reporter: User, payload: ReportCreateRequest) -> None:
     target = payload.target_public_id
 
     if payload.target_type == "listing":
         listing = await db.scalar(
-            select(Listing).where(
-                Listing.public_id == target, Listing.deleted_at.is_(None)
-            )
+            select(Listing).where(Listing.public_id == target, Listing.deleted_at.is_(None))
         )
         if listing is None:
             raise NotFoundError("Объявление не найдено", code="listing_not_found")
@@ -44,9 +40,7 @@ async def _report_target(
 
     if payload.target_type == "animal":
         animal = await db.scalar(
-            select(Animal).where(
-                Animal.public_id == target, Animal.archived_at.is_(None)
-            )
+            select(Animal).where(Animal.public_id == target, Animal.archived_at.is_(None))
         )
         if animal is None:
             raise NotFoundError("Животное не найдено", code="animal_not_found")
@@ -79,9 +73,7 @@ async def _report_target(
         # Do not reveal whether a conversation exists to non-participants.
         raise NotFoundError("Сообщение не найдено", code="message_not_found")
     if message.sender_id == reporter.id:
-        raise ValidationAppError(
-            "Нельзя пожаловаться на собственное сообщение", code="self_report"
-        )
+        raise ValidationAppError("Нельзя пожаловаться на собственное сообщение", code="self_report")
     duplicate = await db.scalar(
         select(MessageReport.id).where(
             MessageReport.message_id == message.id,
@@ -89,9 +81,7 @@ async def _report_target(
         )
     )
     if duplicate is not None:
-        raise ConflictError(
-            "Жалоба на это сообщение уже отправлена", code="report_exists"
-        )
+        raise ConflictError("Жалоба на это сообщение уже отправлена", code="report_exists")
 
 
 async def create_report(

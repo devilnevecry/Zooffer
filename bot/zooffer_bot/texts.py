@@ -72,9 +72,7 @@ def listing_card_text(listing: PublicListingCardView, remaining: int, unlimited:
     age = f" · {listing.age_years} г." if listing.age_years is not None else ""
     owner = public_name(listing.owner.display_name)
     quota = (
-        "Лимит свайпов: без ограничений"
-        if unlimited
-        else f"Осталось свайпов сегодня: {remaining}"
+        "Лимит свайпов: без ограничений" if unlimited else f"Осталось свайпов сегодня: {remaining}"
     )
     return (
         f"<b>{escape(listing.animal_name)}</b>{breed}\n"
@@ -205,10 +203,7 @@ def settings_text(telegram_on: bool) -> str:
 
 def favorites_text(count: int) -> str:
     if not count:
-        return (
-            "<b>Избранное</b>\n\n"
-            "Пока пусто. Нажмите «В избранное» на объявлении в подборе."
-        )
+        return "<b>Избранное</b>\n\nПока пусто. Нажмите «В избранное» на объявлении в подборе."
     return f"<b>Избранное</b>\n\nСохранено объявлений: {count}. Убрать можно кнопкой ниже."
 
 
@@ -219,9 +214,7 @@ def chats_text(count: int) -> str:
             "Диалогов пока нет. Напишите владельцу из объявления — переписка "
             "появится здесь."
         )
-    return (
-        f"<b>Сообщения</b>\n\nДиалогов: {count}. Выберите, чтобы прочитать и ответить."
-    )
+    return f"<b>Сообщения</b>\n\nДиалогов: {count}. Выберите, чтобы прочитать и ответить."
 
 
 def conversation_text(summary: ConversationSummaryView, messages: list[tuple[str, bool]]) -> str:
@@ -297,10 +290,7 @@ def listing_published_text(title: str, status: str, reason: str | None = None) -
 
 def my_listings_text(count: int) -> str:
     if not count:
-        return (
-            "<b>Мои объявления</b>\n\n"
-            "Объявлений пока нет. Добавьте животное командой /addpet."
-        )
+        return "<b>Мои объявления</b>\n\nОбъявлений пока нет. Добавьте животное командой /addpet."
     return (
         f"<b>Мои объявления</b>\n\nВсего: {count}. Выберите объявление, чтобы "
         "посмотреть статус или изменить его."
@@ -371,10 +361,7 @@ def support_subject_prompt() -> str:
 
 
 def support_message_prompt() -> str:
-    return (
-        "Шаг 2 из 2. Опишите ситуацию (10–5000 символов). "
-        "Можно приложить ссылку на объявление."
-    )
+    return "Шаг 2 из 2. Опишите ситуацию (10–5000 символов). Можно приложить ссылку на объявление."
 
 
 def support_created_text(public_id: str) -> str:
@@ -396,10 +383,7 @@ def news_text(channel_url: str) -> str:
 
 
 def language_text() -> str:
-    return (
-        "<b>Язык</b>\n\n"
-        "Сейчас интерфейс доступен на русском языке. Другие языки появятся позже."
-    )
+    return "<b>Язык</b>\n\nСейчас интерфейс доступен на русском языке. Другие языки появятся позже."
 
 
 def link_text(bot_username: str) -> str:
@@ -494,10 +478,7 @@ def wizard_photo_text(count: int) -> str:
 
 
 def wizard_cancelled_text() -> str:
-    return (
-        "Создание объявления отменено. Черновик, если он уже создан, "
-        "сохранится в /mylistings."
-    )
+    return "Создание объявления отменено. Черновик, если он уже создан, сохранится в /mylistings."
 
 
 def wizard_invalid_birth_text() -> str:
@@ -505,10 +486,7 @@ def wizard_invalid_birth_text() -> str:
 
 
 def wizard_city_not_found_text(value: str) -> str:
-    return (
-        f"Город «{escape(value[:60])}» не найден. Попробуйте другое название "
-        "или пропустите шаг."
-    )
+    return f"Город «{escape(value[:60])}» не найден. Попробуйте другое название или пропустите шаг."
 
 
 def wizard_invalid_price_text() -> str:

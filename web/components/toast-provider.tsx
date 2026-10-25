@@ -18,9 +18,7 @@ interface ToastState {
   visible: boolean;
 }
 
-const ToastContext = createContext<((message: string, tone?: ToastTone) => void) | null>(
-  null,
-);
+const ToastContext = createContext<((message: string, tone?: ToastTone) => void) | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState>({

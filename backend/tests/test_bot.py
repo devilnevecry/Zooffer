@@ -213,9 +213,7 @@ async def test_onboarding_creates_consented_account_and_chat(
         assert identity is not None
         user = await db.get(User, identity.user_id)
         assert user is not None and user.status == "active"
-        chat = await db.scalar(
-            select(TelegramChat).where(TelegramChat.user_id == user.id)
-        )
+        chat = await db.scalar(select(TelegramChat).where(TelegramChat.user_id == user.id))
         assert chat is not None and chat.chat_id == str(TELEGRAM_USER_ID)
         profile = await db.get(Profile, user.id)
         assert profile is not None and profile.public_first_name == "Иван"
@@ -264,9 +262,7 @@ async def test_link_token_requires_explicit_bot_confirmation(
             select(AuthIdentity).where(AuthIdentity.provider_user_id == "9100001")
         )
         assert identity is not None and identity.user_id == db_user.id
-        chat = await db.scalar(
-            select(TelegramChat).where(TelegramChat.user_id == db_user.id)
-        )
+        chat = await db.scalar(select(TelegramChat).where(TelegramChat.user_id == db_user.id))
         assert chat is not None
 
     # The token is single use: a second confirmation cannot bind another Telegram ID.
@@ -275,9 +271,7 @@ async def test_link_token_requires_explicit_bot_confirmation(
         bot,
         Update(
             update_id=12,
-            message=_message(
-                f"/start link_{token}", telegram_id=9_100_002, chat_id=9_100_002
-            ),
+            message=_message(f"/start link_{token}", telegram_id=9_100_002, chat_id=9_100_002),
         ),
     )
     await _feed(
@@ -308,9 +302,7 @@ async def test_bot_swipe_uses_shared_quota(
     )
     listing_id = listing["public_id"]
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    ) as guest:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as guest:
         guest_user = await register(
             guest, "bot-guest@example.com", first_name="Гость", last_name=None
         )
@@ -335,9 +327,7 @@ async def test_bot_swipe_uses_shared_quota(
             bot,
             Update(
                 update_id=20,
-                callback_query=_callback(
-                    pack("sw", "like", listing_id), callback_id="cb-swipe"
-                ),
+                callback_query=_callback(pack("sw", "like", listing_id), callback_id="cb-swipe"),
             ),
         )
 
@@ -398,9 +388,7 @@ async def test_webhook_rejects_forged_secret_and_deduplicates(
     bot, _session = fake_bot
     config = load_config()
     webhook = create_webhook_app(dispatcher, bot, config)
-    payload = Update(
-        update_id=777, edited_message=_message("edited")
-    ).model_dump_json()
+    payload = Update(update_id=777, edited_message=_message("edited")).model_dump_json()
 
     async with AsyncClient(
         transport=ASGITransport(app=webhook), base_url="http://testserver"

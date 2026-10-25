@@ -47,8 +47,7 @@ export function ForgotPasswordForm() {
         </div>
       )}
       <p className="modal-lead">
-        Укажите почту, на которую зарегистрирован аккаунт. Мы отправим ссылку для
-        сброса пароля.
+        Укажите почту, на которую зарегистрирован аккаунт. Мы отправим ссылку для сброса пароля.
       </p>
       <div className="field">
         <label htmlFor="forgot-email">Почта</label>

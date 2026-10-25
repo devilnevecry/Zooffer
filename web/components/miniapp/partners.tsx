@@ -15,9 +15,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 export function MiniPartners() {
-  const { data, loading, error, reload } = useMiniApi<PartnerOfferList>(
-    "/api/v1/public/partners",
-  );
+  const { data, loading, error, reload } = useMiniApi<PartnerOfferList>("/api/v1/public/partners");
 
   if (loading && !data) return <MiniLoading label="Загружаем предложения…" />;
   if (error && !data) return <MiniError message={error} onRetry={reload} />;
@@ -43,9 +41,7 @@ export function MiniPartners() {
             <article className="partner-card" key={offer.public_id}>
               <div className="badge-row">
                 <span className="chip chip-brand">{offer.partner_name}</span>
-                <span className="chip">
-                  {categoryLabels[offer.category] ?? offer.category}
-                </span>
+                <span className="chip">{categoryLabels[offer.category] ?? offer.category}</span>
                 {(offer.ad_label || offer.erid) && (
                   <span className="chip chip-accent">
                     {offer.ad_label ?? "Реклама"}
@@ -79,8 +75,8 @@ export function MiniPartners() {
           <h2>Стать партнёром</h2>
         </div>
         <p className="tg-lead">
-          Мы рассматриваем заявки вручную: проверяем компанию, условия и пользу для
-          животных. Отправка заявки не гарантирует размещение.
+          Мы рассматриваем заявки вручную: проверяем компанию, условия и пользу для животных.
+          Отправка заявки не гарантирует размещение.
         </p>
         <PartnerInquiryForm />
       </section>
@@ -88,8 +84,8 @@ export function MiniPartners() {
       <div className="tg-privacy">
         <ShieldIcon width={17} height={17} />
         <span>
-          Клики считаются обезличенно. Zooffer не продаёт контакты владельцев и не
-          передаёт партнёрам данные аккаунта.
+          Клики считаются обезличенно. Zooffer не продаёт контакты владельцев и не передаёт
+          партнёрам данные аккаунта.
         </span>
       </div>
     </div>

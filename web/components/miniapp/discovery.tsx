@@ -183,9 +183,7 @@ function DiscoveryDeck({ initial }: { initial: DiscoveryFeed }) {
   });
 
   const quotaPercent =
-    quota.limit > 0
-      ? Math.max(0, Math.min(100, (quota.remaining / quota.limit) * 100))
-      : 0;
+    quota.limit > 0 ? Math.max(0, Math.min(100, (quota.remaining / quota.limit) * 100)) : 0;
 
   return (
     <div className="tg-discovery">
@@ -266,11 +264,7 @@ function DiscoveryDeck({ initial }: { initial: DiscoveryFeed }) {
                 </div>
                 <div className="tg-card-price-row">
                   <strong className="tg-price">
-                    {formatListingPrice(
-                      current.purpose,
-                      current.price_kopecks,
-                      current.negotiable,
-                    )}
+                    {formatListingPrice(current.purpose, current.price_kopecks, current.negotiable)}
                   </strong>
                   {current.city && (
                     <span className="tg-card-city">
@@ -347,21 +341,26 @@ function DiscoveryDeck({ initial }: { initial: DiscoveryFeed }) {
       <div className="tg-privacy">
         <ShieldIcon width={17} height={17} />
         <span>
-          Мы показываем только имя владельца. Телефон, e-mail и Telegram остаются
-          скрытыми до вашего решения.
+          Мы показываем только имя владельца. Телефон, e-mail и Telegram остаются скрытыми до вашего
+          решения.
         </span>
       </div>
 
       {match && (
-        <div className="tg-overlay" role="dialog" aria-modal="true" aria-label="Взаимное совпадение">
+        <div
+          className="tg-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Взаимное совпадение"
+        >
           <div className="tg-sheet">
             <span className="tg-sheet-mark">
               <HeartIcon width={24} height={24} fill="currentColor" />
             </span>
             <h2>Это взаимно</h2>
             <p>
-              Вам понравился {match.name}, и владелец ответил симпатией. Можно начинать
-              разговор — контакты остаются внутри Zooffer.
+              Вам понравился {match.name}, и владелец ответил симпатией. Можно начинать разговор —
+              контакты остаются внутри Zooffer.
             </p>
             <Link
               href={`/tg/chats/${match.conversationId}`}
@@ -370,11 +369,7 @@ function DiscoveryDeck({ initial }: { initial: DiscoveryFeed }) {
             >
               Открыть чат
             </Link>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setMatch(null)}
-            >
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMatch(null)}>
               Продолжить подбор
             </button>
           </div>

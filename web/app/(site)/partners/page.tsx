@@ -38,9 +38,9 @@ export default async function PartnersPage() {
             <span className="eyebrow">Сотрудничество</span>
             <h1>Полезные предложения без навязчивой рекламы</h1>
             <p className="lead">
-              Zooffer показывает партнёрские предложения только там, где они помогают
-              владельцам животных: корм, ветеринария, груминг и сервисы. Каждый
-              материал маркируется, а статистика считается без персональных данных.
+              Zooffer показывает партнёрские предложения только там, где они помогают владельцам
+              животных: корм, ветеринария, груминг и сервисы. Каждый материал маркируется, а
+              статистика считается без персональных данных.
             </p>
             <div className="btn-row">
               <a href="#partner-form" className="btn btn-primary">
@@ -80,9 +80,8 @@ export default async function PartnersPage() {
               <ShieldIcon width={44} height={44} />
               <h2>Пока нет активных предложений</h2>
               <p>
-                Мы не публикуем выдуманные скидки и партнёров. Когда появятся
-                проверенные предложения, они будут показаны здесь с условиями и
-                маркировкой.
+                Мы не публикуем выдуманные скидки и партнёров. Когда появятся проверенные
+                предложения, они будут показаны здесь с условиями и маркировкой.
               </p>
               <a href="#partner-form" className="btn btn-primary">
                 Предложить сотрудничество
@@ -93,9 +92,7 @@ export default async function PartnersPage() {
               {items.map((offer) => (
                 <article className="partner-card" key={offer.public_id}>
                   <div className="badge-row">
-                    <span className="chip chip-brand">
-                      {offer.partner_name}
-                    </span>
+                    <span className="chip chip-brand">{offer.partner_name}</span>
                     <span className="chip">{categoryLabels[offer.category] ?? offer.category}</span>
                     {(offer.ad_label || offer.erid) && (
                       <span className="chip chip-accent">
@@ -132,8 +129,8 @@ export default async function PartnersPage() {
               <span className="eyebrow">Заявка</span>
               <h2>Расскажите о вашем предложении</h2>
               <p>
-                Мы рассматриваем заявки вручную: проверяем компанию, условия и
-                пользу для животных. Отправка заявки не гарантирует размещение.
+                Мы рассматриваем заявки вручную: проверяем компанию, условия и пользу для животных.
+                Отправка заявки не гарантирует размещение.
               </p>
             </div>
           </div>

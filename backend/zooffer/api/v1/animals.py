@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, File, UploadFile
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from zooffer.api.deps import CurrentAuth, DbSession
 from zooffer.core.errors import ForbiddenError, NotFoundError, ValidationAppError
@@ -147,9 +147,7 @@ async def set_primary_photo(
     if photo is None or photo.animal_id != animal.id:
         raise NotFoundError("Фотография не найдена", code="photo_not_found")
     await db.execute(
-        AnimalPhoto.__table__.update()
-        .where(AnimalPhoto.animal_id == animal.id)
-        .values(is_primary=False)
+        update(AnimalPhoto).where(AnimalPhoto.animal_id == animal.id).values(is_primary=False)
     )
     photo.is_primary = True
     await db.commit()

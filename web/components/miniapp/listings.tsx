@@ -26,11 +26,7 @@ export function MiniListings() {
           </Link>
         }
       />
-      <ListingManager
-        initial={data ?? []}
-        basePath="/tg"
-        listingPath="/tg/listing"
-      />
+      <ListingManager initial={data ?? []} basePath="/tg" listingPath="/tg/listing" />
     </div>
   );
 }

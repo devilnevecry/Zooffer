@@ -8,13 +8,7 @@ import { CheckIcon, DocumentIcon, ImageIcon, PawIcon } from "./icons";
 import { useToast } from "./toast-provider";
 import { api, ClientApiError } from "@/lib/client";
 import { ageFromBirthDate, formatAge, formatPrice, purposeLabel } from "@/lib/format";
-import type {
-  Dictionaries,
-  OwnerAnimal,
-  OwnerListing,
-  Purpose,
-  Species,
-} from "@/lib/types";
+import type { Dictionaries, OwnerAnimal, OwnerListing, Purpose, Species } from "@/lib/types";
 
 const steps = [
   "Цель",
@@ -340,9 +334,7 @@ export function ListingWizard({
       router.push(listingsPath);
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof ClientApiError ? err.message : "Не удалось опубликовать объявление.",
-      );
+      setError(err instanceof ClientApiError ? err.message : "Не удалось опубликовать объявление.");
     } finally {
       setBusy(false);
     }
@@ -351,7 +343,11 @@ export function ListingWizard({
   const toggleConsent = (key: keyof typeof consents) =>
     setConsents((current) => ({ ...current, [key]: !current[key] }));
 
-  const savingLabel = saving ? "Сохраняем…" : listingId ? "Черновик сохранён" : "Черновик создастся автоматически";
+  const savingLabel = saving
+    ? "Сохраняем…"
+    : listingId
+      ? "Черновик сохранён"
+      : "Черновик создастся автоматически";
 
   return (
     <div className="wizard">
@@ -522,8 +518,8 @@ export function ListingWizard({
           <>
             <h2>Здоровье и документы</h2>
             <p>
-              Это заявления владельца, а не медицинское заключение. Будьте точны:
-              доверие важнее идеальной анкеты.
+              Это заявления владельца, а не медицинское заключение. Будьте точны: доверие важнее
+              идеальной анкеты.
             </p>
             <div className="field">
               <label htmlFor="wizard-vaccinated">Прививки</label>
@@ -585,9 +581,8 @@ export function ListingWizard({
               </div>
             )}
             <div className="notice">
-              <DocumentIcon width={18} height={18} /> Документ можно загрузить позже
-              в разделе «Мои животные». Он хранится приватно и доступен только вам и
-              модерации.
+              <DocumentIcon width={18} height={18} /> Документ можно загрузить позже в разделе «Мои
+              животные». Он хранится приватно и доступен только вам и модерации.
             </div>
           </>
         )}
@@ -596,8 +591,8 @@ export function ListingWizard({
           <>
             <h2>Фотографии</h2>
             <p>
-              От 1 до 10 фотографий. Первая станет главной. Перетаскивайте плитки,
-              чтобы изменить порядок.
+              От 1 до 10 фотографий. Первая станет главной. Перетаскивайте плитки, чтобы изменить
+              порядок.
             </p>
             <div className="photo-grid">
               {photos.map((photo, index) => (
@@ -667,8 +662,7 @@ export function ListingWizard({
             <p>Точный адрес не публикуется — только город и регион.</p>
             {form.purpose === "adoption" || form.purpose === "rehoming" ? (
               <div className="notice">
-                Для пристройства цена не указывается. Объявление будет отмечено как
-                бесплатное.
+                Для пристройства цена не указывается. Объявление будет отмечено как бесплатное.
               </div>
             ) : (
               <>
@@ -679,7 +673,9 @@ export function ListingWizard({
                     className="input"
                     inputMode="numeric"
                     value={form.priceRub}
-                    onChange={(event) => update("priceRub", event.target.value.replace(/[^\d]/g, ""))}
+                    onChange={(event) =>
+                      update("priceRub", event.target.value.replace(/[^\d]/g, ""))
+                    }
                     placeholder="Например, 45000"
                   />
                 </div>
@@ -755,8 +751,8 @@ export function ListingWizard({
               <span className="field-hint">{form.description.length} / 5000</span>
             </div>
             <p className="field-hint">
-              Не указывайте телефон, почту, Telegram или точный адрес — это нарушает
-              правила и скрывается автоматически.
+              Не указывайте телефон, почту, Telegram или точный адрес — это нарушает правила и
+              скрывается автоматически.
             </p>
           </>
         )}
@@ -766,7 +762,7 @@ export function ListingWizard({
             <h2>Проверьте перед публикацией</h2>
             <p>Так объявление увидят другие пользователи.</p>
             <div className="preview-card">
-              {photos.find((photo) => photo.is_primary) ?? photos[0] ? (
+              {(photos.find((photo) => photo.is_primary) ?? photos[0]) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={(photos.find((photo) => photo.is_primary) ?? photos[0]).url}
@@ -838,13 +834,12 @@ export function ListingWizard({
                   checked={consents.welfare}
                   onChange={() => toggleConsent("welfare")}
                 />{" "}
-                Я не передаю животное на бои, для жестокого обращения или незаконной
-                торговли.
+                Я не передаю животное на бои, для жестокого обращения или незаконной торговли.
               </label>
             </div>
             <div className="notice">
-              Чистые объявления публикуются сразу. Если автоматическая проверка
-              найдёт спорные детали, объявление попадёт к модератору.
+              Чистые объявления публикуются сразу. Если автоматическая проверка найдёт спорные
+              детали, объявление попадёт к модератору.
             </div>
           </>
         )}
@@ -856,7 +851,12 @@ export function ListingWizard({
             </button>
           )}
           {step < steps.length - 1 ? (
-            <button type="button" className="btn btn-primary" onClick={() => void next()} disabled={busy}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void next()}
+              disabled={busy}
+            >
               {busy ? "Сохраняем…" : "Продолжить"}
             </button>
           ) : (
@@ -866,11 +866,7 @@ export function ListingWizard({
               onClick={() => void publish()}
               disabled={busy}
             >
-              {busy
-                ? "Публикуем…"
-                : editing
-                  ? "Опубликовать изменения"
-                  : "Опубликовать объявление"}
+              {busy ? "Публикуем…" : editing ? "Опубликовать изменения" : "Опубликовать объявление"}
             </button>
           )}
         </div>

@@ -38,7 +38,9 @@ export function ListingCard({
           </div>
         )}
         <span className="chip">{purposeLabel(listing.purpose)}</span>
-        {listing.is_featured && <span className="chip chip-accent featured-flag">Выбор Zooffer</span>}
+        {listing.is_featured && (
+          <span className="chip chip-accent featured-flag">Выбор Zooffer</span>
+        )}
       </div>
       <div className="listing-body">
         <div className="listing-meta">

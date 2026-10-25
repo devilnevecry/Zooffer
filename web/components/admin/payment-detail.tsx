@@ -30,9 +30,7 @@ export function PaymentDetail({ initial }: { initial: AdminPaymentDetail }) {
 
   const refund = async () => {
     if (
-      !window.confirm(
-        "Оформить возврат? Платные возможности будут отключены сразу после возврата.",
-      )
+      !window.confirm("Оформить возврат? Платные возможности будут отключены сразу после возврата.")
     ) {
       return;
     }
@@ -61,9 +59,7 @@ export function PaymentDetail({ initial }: { initial: AdminPaymentDetail }) {
         <div>
           <span className="eyebrow">Биллинг</span>
           <h1>Платёж</h1>
-          <p className="muted">
-            Заказ {order.public_id}. Детали и события платёжного провайдера.
-          </p>
+          <p className="muted">Заказ {order.public_id}. Детали и события платёжного провайдера.</p>
         </div>
         <Link href="/admin/payments" className="btn btn-ghost btn-sm">
           К списку
@@ -103,9 +99,7 @@ export function PaymentDetail({ initial }: { initial: AdminPaymentDetail }) {
         </dl>
 
         {order.demo && (
-          <p className="tg-hint">
-            Демонстрационный заказ. Реальных списаний по нему не было.
-          </p>
+          <p className="tg-hint">Демонстрационный заказ. Реальных списаний по нему не было.</p>
         )}
 
         {order.status === "paid" && (

@@ -1,0 +1,70 @@
+name: Bug report
+description: Report reproducible incorrect behaviour in Zooffer.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include passwords, tokens, real user data or production secrets. Use the demo dataset.
+        Security vulnerabilities must be reported privately — see SECURITY.md.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong, in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Exact steps, URLs, API calls or bot commands.
+      placeholder: |
+        1. Start the stack with ...
+        2. Sign in as anna@example.com ...
+        3. Open /account/subscription ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include logs or screenshots with secrets and personal data removed.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend API
+        - Website
+        - Telegram Mini App
+        - Telegram bot
+        - Admin
+        - Payments
+        - Documentation
+        - Local setup / CI
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.2.0-payments-admin-qa
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I removed secrets and personal data from this report.
+          required: true
+        - label: I checked docs/KNOWN_ISSUES.md and docs/BLOCKERS.md first.
+          required: true

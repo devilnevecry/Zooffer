@@ -63,8 +63,8 @@ class LocalMediaStorage:
 
 
 def get_storage() -> MediaStorage:
-    # S3 adapter is configured for production behind the same interface; local disk is used
-    # until S3 credentials are provided (see docs/BLOCKERS.md).
+    # Only the local-disk adapter exists today. Production object storage (S3-compatible) is
+    # not implemented and remains blocked on credentials and a deployment target (B9).
     return LocalMediaStorage()
 
 

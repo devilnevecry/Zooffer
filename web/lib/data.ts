@@ -67,9 +67,7 @@ export function getDictionaries(): Promise<Dictionaries | null> {
   return serverFetch<Dictionaries>("/api/v1/public/dictionaries", { allow404: true });
 }
 
-export function searchListings(
-  params: SearchParams,
-): Promise<ListingPageData | null> {
+export function searchListings(params: SearchParams): Promise<ListingPageData | null> {
   return serverFetch<ListingPageData>(
     `/api/v1/public/listings${toQuery({ ...params, limit: params.limit ?? 24 })}`,
     { allow404: true },
@@ -77,19 +75,16 @@ export function searchListings(
 }
 
 export function getPublicListing(slug: string): Promise<ListingDetail | null> {
-  return serverFetch<ListingDetail>(
-    `/api/v1/public/listings/${encodeURIComponent(slug)}`,
-    { allow404: true },
-  );
+  return serverFetch<ListingDetail>(`/api/v1/public/listings/${encodeURIComponent(slug)}`, {
+    allow404: true,
+  });
 }
 
-export function getDiscoveryFeed(
-  params: SearchParams = {},
-): Promise<DiscoveryFeed | null> {
-  return serverFetch<DiscoveryFeed>(
-    `/api/v1/discovery/feed${toQuery({ ...params, limit: 20 })}`,
-    { allow401: true, allow404: true },
-  );
+export function getDiscoveryFeed(params: SearchParams = {}): Promise<DiscoveryFeed | null> {
+  return serverFetch<DiscoveryFeed>(`/api/v1/discovery/feed${toQuery({ ...params, limit: 20 })}`, {
+    allow401: true,
+    allow404: true,
+  });
 }
 
 export function getFavorites<T>(): Promise<T | null> {

@@ -23,9 +23,7 @@ export function useMiniApi<T>(path: string | null) {
       if (request.current === id) setData(payload);
     } catch (err) {
       if (request.current === id) {
-        setError(
-          err instanceof ClientApiError ? err.message : "Не удалось загрузить данные.",
-        );
+        setError(err instanceof ClientApiError ? err.message : "Не удалось загрузить данные.");
       }
     } finally {
       if (request.current === id) setLoading(false);
@@ -45,9 +43,7 @@ export function useMiniApi<T>(path: string | null) {
       })
       .catch((err) => {
         if (request.current === id) {
-          setError(
-            err instanceof ClientApiError ? err.message : "Не удалось загрузить данные.",
-          );
+          setError(err instanceof ClientApiError ? err.message : "Не удалось загрузить данные.");
         }
       })
       .finally(() => {
@@ -99,13 +95,7 @@ export function MiniLoading({ label = "Загружаем…" }: { label?: strin
   );
 }
 
-export function MiniError({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry?: () => void;
-}) {
+export function MiniError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="tg-empty" role="alert">
       <div className="tg-empty-icon">!</div>

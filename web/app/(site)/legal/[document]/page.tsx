@@ -276,15 +276,17 @@ export default async function LegalPage({ params }: PageProps) {
             ))}
           </nav>
           <div className="privacy-note">
-            Версия от {new Date(document.updated).toLocaleDateString("ru-RU")}. Вопросы
-            — через <Link href="/support">поддержку</Link>.
+            Версия от {new Date(document.updated).toLocaleDateString("ru-RU")}. Вопросы — через{" "}
+            <Link href="/support">поддержку</Link>.
           </div>
         </aside>
         <article className="legal-document">
           <span className="eyebrow">Zooffer</span>
           <h1>{document.title}</h1>
           <p className="lead">{document.intro}</p>
-          <p className="legal-meta">Редакция от {new Date(document.updated).toLocaleDateString("ru-RU")}</p>
+          <p className="legal-meta">
+            Редакция от {new Date(document.updated).toLocaleDateString("ru-RU")}
+          </p>
           {document.sections.map((section) => (
             <section key={section.heading}>
               <h2>{section.heading}</h2>
@@ -301,9 +303,8 @@ export default async function LegalPage({ params }: PageProps) {
             </section>
           ))}
           <div className="notice warn">
-            Это рабочий текст для разработки. Перед публичным запуском документы
-            должны проверить юрист и оператор персональных данных; реквизиты и
-            контакты появятся после регистрации.
+            Это рабочий текст для разработки. Перед публичным запуском документы должны проверить
+            юрист и оператор персональных данных; реквизиты и контакты появятся после регистрации.
           </div>
         </article>
       </div>

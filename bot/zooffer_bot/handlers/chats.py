@@ -161,13 +161,9 @@ async def chat_message(
         await message.answer("Диалог не найден. Откройте /chats.")
         return
     try:
-        await services.send_message(
-            db, user, conversation_public_id, message.text or ""
-        )
+        await services.send_message(db, user, conversation_public_id, message.text or "")
     except AppError as exc:
-        await message.answer(
-            exc.message, reply_markup=chat_keyboard(str(conversation_public_id))
-        )
+        await message.answer(exc.message, reply_markup=chat_keyboard(str(conversation_public_id)))
         return
     await message.answer(
         "Сообщение отправлено.",

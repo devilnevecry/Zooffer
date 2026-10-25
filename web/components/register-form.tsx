@@ -105,8 +105,7 @@ export function RegisterForm({ dictionaries }: { dictionaries: Dictionaries | nu
         </div>
       </div>
       <p className="field-hint">
-        Именно так вас увидят другие пользователи. Почта и контакты останутся
-        скрытыми.
+        Именно так вас увидят другие пользователи. Почта и контакты останутся скрытыми.
       </p>
       <div className="field">
         <label htmlFor="register-email">Почта</label>

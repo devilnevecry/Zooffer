@@ -77,8 +77,8 @@ export function NotificationCenter({ initial }: { initial: NotificationList }) {
         <BellIcon width={44} height={44} />
         <h2>Уведомлений пока нет</h2>
         <p>
-          Здесь появятся сообщения, взаимные совпадения, решения по объявлениям и
-          важные события аккаунта.
+          Здесь появятся сообщения, взаимные совпадения, решения по объявлениям и важные события
+          аккаунта.
         </p>
       </div>
     );
@@ -103,10 +103,7 @@ export function NotificationCenter({ initial }: { initial: NotificationList }) {
         {items.map((item) => {
           const link = linkFor(item);
           return (
-            <article
-              className={`notification-row${item.read_at ? "" : " unread"}`}
-              key={item.id}
-            >
+            <article className={`notification-row${item.read_at ? "" : " unread"}`} key={item.id}>
               <span className="notification-icon">
                 <BellIcon width={19} height={19} />
               </span>

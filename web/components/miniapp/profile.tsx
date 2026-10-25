@@ -44,9 +44,7 @@ export function MiniProfile() {
 
   const dictionaries = useMiniApi<Dictionaries>("/api/v1/public/dictionaries");
   const sessions = useMiniApi<SessionList>("/api/v1/auth/sessions");
-  const preferences = useMiniApi<NotificationPreferenceList>(
-    "/api/v1/notification-preferences",
-  );
+  const preferences = useMiniApi<NotificationPreferenceList>("/api/v1/notification-preferences");
   const blocked = useMiniApi<BlockedUserList>("/api/v1/blocked-users");
 
   if (!user) return <MiniLoading label="Открываем профиль…" />;
@@ -110,8 +108,8 @@ export function MiniProfile() {
       <div className="tg-privacy">
         <ShieldIcon width={17} height={17} />
         <span>
-          Другие видят только имя, фамилию (если указана) и город. Контакты, Telegram и
-          история действий остаются приватными.
+          Другие видят только имя, фамилию (если указана) и город. Контакты, Telegram и история
+          действий остаются приватными.
         </span>
       </div>
 

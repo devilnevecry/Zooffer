@@ -11,14 +11,10 @@ export function MiniListingWizard({ listingId }: { listingId?: string }) {
   const listing = useMiniApi<OwnerListing>(
     listingId ? `/api/v1/listings/${encodeURIComponent(listingId)}` : null,
   );
-  const animals = useMiniApi<{ items: OwnerAnimal[] }>(
-    listingId ? "/api/v1/animals" : null,
-  );
+  const animals = useMiniApi<{ items: OwnerAnimal[] }>(listingId ? "/api/v1/animals" : null);
 
-  const loading =
-    !dictionaries.data || (editing && (!listing.data || !animals.data));
-  const error =
-    dictionaries.error || (editing ? listing.error || animals.error : "");
+  const loading = !dictionaries.data || (editing && (!listing.data || !animals.data));
+  const error = dictionaries.error || (editing ? listing.error || animals.error : "");
 
   if (loading && !error) {
     return <MiniLoading label={editing ? "Открываем черновик…" : "Готовим мастер…"} />;
@@ -37,9 +33,8 @@ export function MiniListingWizard({ listingId }: { listingId?: string }) {
   }
 
   const initialAnimal = editing
-    ? animals.data?.items.find(
-        (item) => item.public_id === listing.data?.animal_public_id,
-      ) ?? null
+    ? (animals.data?.items.find((item) => item.public_id === listing.data?.animal_public_id) ??
+      null)
     : null;
 
   if (editing && (!listing.data || !initialAnimal)) {

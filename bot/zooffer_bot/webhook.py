@@ -21,7 +21,8 @@ from .config import BotConfig, require_webhook_secret
 
 logger = logging.getLogger("zooffer.bot.webhook")
 
-SECRET_HEADER = "X-Telegram-Bot-Api-Secret-Token"  # noqa: S105 - header name, not a secret
+# HTTP header name carrying the Telegram webhook secret, not a secret value.
+SECRET_HEADER = "X-Telegram-Bot-Api-Secret-Token"  # noqa: S105  # nosec B105
 MAX_UPDATE_BYTES = 1024 * 1024
 
 
@@ -194,7 +195,8 @@ async def run_webhook(
     bot: Bot,
     config: BotConfig,
     *,
-    host: str = "0.0.0.0",  # noqa: S104 - explicit container bind
+    # The webhook container binds to all interfaces; the reverse proxy exposes HTTPS only.
+    host: str = "0.0.0.0",  # noqa: S104  # nosec B104
     port: int = 8081,
     workers: int = 1,
 ) -> None:

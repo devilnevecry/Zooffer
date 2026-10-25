@@ -39,9 +39,7 @@ export function CheckoutPanel({
       setOrder(next);
       setError(null);
     } catch (err) {
-      setError(
-        err instanceof ClientApiError ? err.message : "Не удалось загрузить платёж",
-      );
+      setError(err instanceof ClientApiError ? err.message : "Не удалось загрузить платёж");
     } finally {
       setLoading(false);
     }
@@ -58,9 +56,7 @@ export function CheckoutPanel({
       })
       .catch((err) => {
         if (active) {
-          setError(
-            err instanceof ClientApiError ? err.message : "Не удалось загрузить платёж",
-          );
+          setError(err instanceof ClientApiError ? err.message : "Не удалось загрузить платёж");
         }
       })
       .finally(() => {
@@ -79,10 +75,9 @@ export function CheckoutPanel({
   const confirmDemo = async () => {
     setBusy(true);
     try {
-      const next = await api<BillingOrder>(
-        `/api/v1/billing/orders/${orderId}/demo-confirm`,
-        { method: "POST" },
-      );
+      const next = await api<BillingOrder>(`/api/v1/billing/orders/${orderId}/demo-confirm`, {
+        method: "POST",
+      });
       setOrder(next);
       showToast("Демо-платёж подтверждён. Подписка активирована.", "success");
     } catch (err) {
@@ -126,9 +121,8 @@ export function CheckoutPanel({
         <div className="notice warn">
           <ShieldIcon width={18} height={18} />
           <span>
-            Демонстрационная оплата. Это не настоящий платёж: деньги не списываются,
-            карта не запрашивается. Подтверждение ниже активирует подписку внутри
-            тестового окружения.
+            Демонстрационная оплата. Это не настоящий платёж: деньги не списываются, карта не
+            запрашивается. Подтверждение ниже активирует подписку внутри тестового окружения.
           </span>
         </div>
       )}
@@ -176,8 +170,8 @@ export function CheckoutPanel({
         <div className="checkout-result">
           <strong>Ожидаем подтверждение платёжной системы</strong>
           <p className="muted">
-            Если оплата уже прошла, обновите статус через минуту. Подписка включится
-            автоматически после уведомления провайдера.
+            Если оплата уже прошла, обновите статус через минуту. Подписка включится автоматически
+            после уведомления провайдера.
           </p>
           <button type="button" className="btn btn-secondary" onClick={() => void refresh()}>
             Обновить статус

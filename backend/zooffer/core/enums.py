@@ -17,7 +17,8 @@ class UserRole(StrEnum):
 
 
 class AuthProvider(StrEnum):
-    PASSWORD = "password"
+    # Provider identifier stored in the database; not a credential.
+    PASSWORD = "password"  # nosec B105
     TELEGRAM = "telegram"
 
 

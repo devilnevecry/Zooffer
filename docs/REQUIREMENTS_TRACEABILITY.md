@@ -11,7 +11,7 @@ Status labels follow master prompt §0.3: `VERIFIED`, `IMPLEMENTED-UNVERIFIED`, 
 | §1 Vision, purposes, matching | `VERIFIED` | Five purposes in `ListingPurpose`; mutual-only match transaction | `test_listings.py`, `test_discovery.py` |
 | §2 Lessons learned | `VERIFIED` | No legacy reuse; PostgreSQL invariants; real DTOs | Repository audit, ADR 0002/0005 |
 | §3 Architecture | `VERIFIED` | Modular monolith: FastAPI services shared by web/bot/Mini App | `docs/ARCHITECTURE.md` |
-| §3.1 Git workflow / private repo | `BLOCKED` (B1) | Local `main`, tags, CI files, exact push commands | No `gh`/GitHub token; see `docs/BLOCKERS.md` |
+| §3.1 Git workflow / remote | `IMPLEMENTED-UNVERIFIED` (B1) | `main` + tags pushed; CI, templates and Dependabot committed; PR/release flow documented | Remote push verified 2026-10-25; PRs, milestones and remote CI runs not observed (no `gh` token) |
 | §4 Design direction | `VERIFIED` (local) | Princess Blue palette, Unbounded/Onest, editorial cards, selective glass, mobile tab bar | Visual QA at 390/1280; `app/globals.css`, `docs/adr/0010-design-direction.md` |
 | §4.7 Homepage sections | `VERIFIED` | All required sections render from API with empty states | `web/app/(site)/page.tsx`; local run |
 | §4.8 Motion | `VERIFIED` | CSS entrance/reveal motion plus reduced-motion override | `globals.css`; manual QA |
@@ -29,8 +29,8 @@ Status labels follow master prompt §0.3: `VERIFIED`, `IMPLEMENTED-UNVERIFIED`, 
 | §7 Shared swipe quota | `VERIFIED` | Atomic quota keyed to Europe/Moscow date; all channels use same service | `test_discovery.py`; bot uses `swipe_service` |
 | §8.1 Identity/linking | `IMPLEMENTED-UNVERIFIED` (live) | One canonical user; explicit link confirmation; single-use hashed tokens | `test_auth.py`; live bot `BLOCKED` (B2/B3) |
 | §8.2 Telegram validation | `VERIFIED` (fakes) | HMAC, freshness, replay protection for Login and `initData` | `test_auth.py` with generated fixtures |
-| §8.3 Bot commands/flows | `IMPLEMENTED-UNVERIFIED` | All listed commands, wizard, swipes, chats, settings, honest payment unavailable | `bot/tests`; live bot `BLOCKED` (B2) |
-| §8.3 Notifications | `VERIFIED` (worker) | Preference/quiet-hour/dedupe worker with blocked-bot handling | `bot/tests`; live delivery `BLOCKED` (B2) |
+| §8.3 Bot commands/flows | `IMPLEMENTED-UNVERIFIED` | All listed commands, wizard, swipes, chats, settings, honest payment unavailable | `backend/tests/test_bot.py`; live bot `BLOCKED` (B2) |
+| §8.3 Notifications | `VERIFIED` (worker) | Preference/quiet-hour/dedupe worker with blocked-bot handling | `backend/tests/test_bot.py`; live delivery `BLOCKED` (B2) |
 | §8.4 Mini App | `IMPLEMENTED-UNVERIFIED` (live) | `/tg/*` screens, `initData` session, WebApp SDK, same API/design | `next build`, local QA; live `BLOCKED` (B3) |
 | §8.5 Bot production operation | `IMPLEMENTED-UNVERIFIED` | Webhook secret/dedupe/queue, health, docs | No public HTTPS host (B2/B7) |
 | §9.1 Plans/entitlements | `VERIFIED` | DB plans, server-derived entitlements, placeholder-price flag | `test_payments.py`, `test_account.py` |
@@ -38,25 +38,30 @@ Status labels follow master prompt §0.3: `VERIFIED`, `IMPLEMENTED-UNVERIFIED`, 
 | §9.3 Payment engineering | `VERIFIED` (fake) | Server pricing, verified webhook path, replay/idempotency, refund/revoke, admin grant/reconcile | `test_payments.py` (5 tests); real provider `BLOCKED` |
 | §10 Partner program | `VERIFIED` | Offers, public page, click tracking, inquiry, ad-label fields, zero-partner empty state | `test_account.py`, manual QA |
 | §11 SEO/growth | `VERIFIED` | SSR pages, metadata, sitemap, robots, JSON-LD, OG, canonicals | `next build`; route inspection |
-| §12 Security | `VERIFIED` (documented scope) | Sessions/CSRF/IDOR/upload/webhooks/MFA/RBAC | `docs/SECURITY_REPORT.md`; residual risks listed |
+| §12 Security | `VERIFIED` (documented scope) | Sessions/CSRF/IDOR/upload/webhooks/MFA/RBAC; bandit and gitleaks gates | `docs/SECURITY_REPORT.md`; `scripts/ci.ps1`; residual risks listed |
 | §13 Russian legal | `BLOCKED` (B8) / templates | Consent, offer, privacy, ad marking fields | Legal review required; `docs/COMPLIANCE.md` |
 | §14 Phased execution | `VERIFIED` (local) | Phases 1–13 implemented in slices; 14–15 partial/blocked | `docs/IMPLEMENTATION_PLAN.md` |
-| §15 Deliverables | `PARTIAL` | Runnable system, tests, docs; remote repo/hosting/live integrations blocked | Final report below |
+| §15 Deliverables | `PARTIAL` | Runnable system, tests, docs, repository presentation; live integrations, hosting and remote GitHub flow remain blocked/unverified | Final report below |
 
 ## Final acceptance gaps
 
-1. **GitHub remote/PRs/releases** — `BLOCKED` (B1): no `gh` or token. Local branches, tags and push
-   commands exist.
+1. **GitHub PRs/releases/milestones and remote CI** — `IMPLEMENTED-UNVERIFIED` (B1): `main` and tags
+   are pushed, but no `gh` token was available to open PRs, create milestones/labels or observe CI
+   runs.
 2. **Live Telegram bot and Mini App** — `BLOCKED` (B2/B3): no bot token or public HTTPS domain.
    Logic and validation are implemented and fake-tested.
 3. **Real payments** — `BLOCKED` (B4/B5): no YooKassa merchant credentials or Telegram Stars setup.
    Fake provider is fully exercised; YooKassa requires a sandbox run.
 4. **Real e-mail delivery** — `BLOCKED` (B6): no SMTP credentials; console adapter used locally.
-5. **Production hosting/domain/TLS** — `BLOCKED` (B7): no infrastructure or DNS.
+5. **Production hosting/domain/TLS** — `BLOCKED` (B7): no infrastructure or DNS. No production
+   Compose or Caddy artifact exists.
 6. **Legal entity details** — `BLOCKED` (B8): templates contain marked placeholders and require
    qualified Russian legal review.
-7. **Browser e2e/Playwright and load tests** — `NOT STARTED`; local visual QA was manual. The
-   backend suite and build checks are the current automated evidence.
+7. **Object storage** — `BLOCKED` (B9): only the local-disk media adapter exists; no S3 bucket,
+   credentials or signed private-document URLs.
+8. **Browser e2e/Playwright and load tests** — `NOT STARTED`; local visual QA was manual. The
+   backend suite, SAST, secret scan, dependency audits and build checks are the current automated
+   evidence.
 
 ## Residual risks
 

@@ -144,7 +144,5 @@ async def swipe_callback(
             reply_markup=match_keyboard(str(result.conversation_public_id)),
         )
         return
-    await safe_callback_answer(
-        callback, "Лайк отправлен" if action == "like" else "Пропущено"
-    )
+    await safe_callback_answer(callback, "Лайк отправлен" if action == "like" else "Пропущено")
     await show_next_listing(callback.message, state, db, user, config)

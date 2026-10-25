@@ -2,23 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useAuth } from "../auth-provider";
-import {
-  ChatIcon,
-  HeartIcon,
-  SearchIcon,
-  SparkIcon,
-  UserIcon,
-} from "../icons";
+import { ChatIcon, HeartIcon, SearchIcon, SparkIcon, UserIcon } from "../icons";
 import { api, ClientApiError } from "@/lib/client";
 import type { AuthResponse, MeResponse } from "@/lib/types";
 
@@ -180,8 +167,7 @@ export function MiniAppRoot({ children }: { children: ReactNode }) {
     // Inside Telegram the SDK script is normally already injected. When it is not,
     // wait for it briefly instead of declaring the visitor "outside Telegram".
     const likelyTelegram =
-      /Telegram/i.test(window.navigator.userAgent) ||
-      "TelegramWebviewProxy" in window;
+      /Telegram/i.test(window.navigator.userAgent) || "TelegramWebviewProxy" in window;
     const deadline = Date.now() + (likelyTelegram ? 5_000 : 500);
     let timer = 0;
 
@@ -426,8 +412,8 @@ function MiniAppSessionGate({
         </div>
         <h1>Zooffer живёт в Telegram</h1>
         <p>
-          Mini App открывается из бота Zooffer. Войдите через Telegram, чтобы
-          сохранить единый аккаунт, лимиты и переписку с сайтом.
+          Mini App открывается из бота Zooffer. Войдите через Telegram, чтобы сохранить единый
+          аккаунт, лимиты и переписку с сайтом.
         </p>
         {BOT_URL ? (
           <a href={BOT_URL} className="btn btn-primary" target="_blank" rel="noreferrer">
@@ -435,8 +421,8 @@ function MiniAppSessionGate({
           </a>
         ) : (
           <p className="tg-hint">
-            Ссылка на бота появится после настройки Telegram-бота. Сайт продолжает
-            работать без Telegram.
+            Ссылка на бота появится после настройки Telegram-бота. Сайт продолжает работать без
+            Telegram.
           </p>
         )}
         <Link href="/" className="btn btn-secondary">

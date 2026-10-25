@@ -31,7 +31,10 @@ export function UserTable({ initial }: { initial: AdminUserList }) {
           setTotal(data.total);
         })
         .catch((err) => {
-          showToast(err instanceof ClientApiError ? err.message : "Не удалось найти пользователей", "error");
+          showToast(
+            err instanceof ClientApiError ? err.message : "Не удалось найти пользователей",
+            "error",
+          );
         })
         .finally(() => setLoading(false));
     }, 350);
@@ -56,7 +59,10 @@ export function UserTable({ initial }: { initial: AdminUserList }) {
       });
       showToast("Пользователь обновлён", "success");
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось обновить пользователя", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось обновить пользователя",
+        "error",
+      );
     } finally {
       setSavingId(null);
     }
@@ -100,9 +106,7 @@ export function UserTable({ initial }: { initial: AdminUserList }) {
                 <tr key={item.public_id}>
                   <td>
                     <strong>{item.display_name ?? "Владелец"}</strong>
-                    <small className="admin-table-sub">
-                      {item.listings_count} объявл.
-                    </small>
+                    <small className="admin-table-sub">{item.listings_count} объявл.</small>
                   </td>
                   <td>{item.email ?? "—"}</td>
                   <td>{item.city_name ?? "—"}</td>

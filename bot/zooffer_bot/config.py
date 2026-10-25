@@ -38,9 +38,7 @@ def load_config() -> BotConfig:
     username = os.getenv("TELEGRAM_BOT_USERNAME", settings.telegram_bot_username).lstrip("@")
     return BotConfig(
         token=os.getenv("TELEGRAM_BOT_TOKEN", settings.telegram_bot_token),
-        webhook_secret=os.getenv(
-            "TELEGRAM_WEBHOOK_SECRET", settings.telegram_webhook_secret
-        ),
+        webhook_secret=os.getenv("TELEGRAM_WEBHOOK_SECRET", settings.telegram_webhook_secret),
         webhook_url=os.getenv("TELEGRAM_WEBHOOK_URL", ""),
         webhook_path=os.getenv("TELEGRAM_WEBHOOK_PATH", "/telegram/webhook"),
         redis_url=os.getenv("REDIS_URL", settings.redis_url),
@@ -56,7 +54,8 @@ def load_config() -> BotConfig:
         throttle_window=int(os.getenv("BOT_THROTTLE_WINDOW", "10")),
         global_throttle_limit=int(os.getenv("BOT_GLOBAL_THROTTLE_LIMIT", "200")),
         global_throttle_window=int(os.getenv("BOT_GLOBAL_THROTTLE_WINDOW", "10")),
-        webhook_host=os.getenv("BOT_WEBHOOK_HOST", "0.0.0.0"),  # noqa: S104 - container bind
+        # Container bind: the bot listens behind a reverse proxy, not on a public host port.
+        webhook_host=os.getenv("BOT_WEBHOOK_HOST", "0.0.0.0"),  # noqa: S104  # nosec B104
         webhook_port=int(os.getenv("BOT_WEBHOOK_PORT", "8081")),
         notification_worker=os.getenv("BOT_NOTIFICATION_WORKER", "true").lower()
         in {"1", "true", "yes", "on"},
@@ -69,8 +68,7 @@ def load_config() -> BotConfig:
 def require_bot_token(config: BotConfig) -> str:
     if not config.token:
         raise RuntimeError(
-            "TELEGRAM_BOT_TOKEN is not configured; the bot cannot start. "
-            "See docs/BLOCKERS.md (B2)."
+            "TELEGRAM_BOT_TOKEN is not configured; the bot cannot start. See docs/BLOCKERS.md (B2)."
         )
     return config.token
 

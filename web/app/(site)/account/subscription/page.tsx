@@ -20,8 +20,7 @@ export default async function SubscriptionPage() {
           <span className="eyebrow">Zooffer Plus</span>
           <h1>Подписка</h1>
           <p className="muted">
-            План, лимиты и история продления. Управление доступно без обращения в
-            поддержку.
+            План, лимиты и история продления. Управление доступно без обращения в поддержку.
           </p>
         </div>
       </div>

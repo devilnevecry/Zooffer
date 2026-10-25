@@ -78,7 +78,10 @@ export function ChatPanel({
       await load();
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось отправить сообщение", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось отправить сообщение",
+        "error",
+      );
     } finally {
       setSending(false);
     }
@@ -132,7 +135,10 @@ export function ChatPanel({
       showToast(nextBlocked ? "Пользователь заблокирован" : "Блокировка снята");
       await load();
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось изменить блокировку", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось изменить блокировку",
+        "error",
+      );
     }
   };
 
@@ -179,11 +185,7 @@ export function ChatPanel({
                 : "Взаимное совпадение"}
             </small>
           </span>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => void toggleBlock()}
-          >
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggleBlock()}>
             {blocked ? "Разблокировать" : "Блок"}
           </button>
         </header>
@@ -233,8 +235,8 @@ export function ChatPanel({
             <div className="privacy-note">
               <ShieldIcon width={18} height={18} />
               <span>
-                Не отправляйте предоплату и коды из SMS. Контакты передавайте только
-                когда сами решите это сделать.
+                Не отправляйте предоплату и коды из SMS. Контакты передавайте только когда сами
+                решите это сделать.
               </span>
             </div>
             <button

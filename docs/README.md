@@ -3,6 +3,10 @@
 | Document | Purpose |
 |---|---|
 | [../README.md](../README.md) | Project overview, quick start, verification commands |
+| [../README.ru.md](../README.ru.md) | Russian companion |
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) | Setup, branching, commit style, review checklist |
+| [../SECURITY.md](../SECURITY.md) | Private vulnerability reporting and scope |
+| [../CHANGELOG.md](../CHANGELOG.md) | Version history (Keep a Changelog) |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Phased plan, acceptance criteria, risks, live status |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design, layering, data flow |
 | [DECISIONS.md](DECISIONS.md) | Decision index + ADR links |

@@ -198,7 +198,12 @@ button {
   top: 0;
   z-index: 50;
   padding: 14px 0;
-  background: linear-gradient(to bottom, rgba(243, 246, 250, 0.94), rgba(243, 246, 250, 0.65) 70%, transparent);
+  background: linear-gradient(
+    to bottom,
+    rgba(243, 246, 250, 0.94),
+    rgba(243, 246, 250, 0.65) 70%,
+    transparent
+  );
   backdrop-filter: blur(18px) saturate(1.2);
 }
 
@@ -251,7 +256,9 @@ button {
   font-size: 14px;
   font-weight: 600;
   color: var(--ink-2);
-  transition: background 180ms ease, color 180ms ease;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
 }
 
 .main-nav a:hover,
@@ -277,7 +284,9 @@ button {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.7);
   color: var(--ink-2);
-  transition: transform 160ms var(--ease-out), background 160ms ease;
+  transition:
+    transform 160ms var(--ease-out),
+    background 160ms ease;
 }
 
 .icon-button:hover {
@@ -319,7 +328,10 @@ button {
   font-weight: 700;
   font-size: 15px;
   letter-spacing: -0.01em;
-  transition: transform 180ms var(--ease-out), box-shadow 180ms ease, background 180ms ease;
+  transition:
+    transform 180ms var(--ease-out),
+    box-shadow 180ms ease,
+    background 180ms ease;
 }
 
 .btn:hover {
@@ -447,7 +459,10 @@ button {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  transition: transform 260ms var(--ease-out), box-shadow 260ms ease, border-color 260ms ease;
+  transition:
+    transform 260ms var(--ease-out),
+    box-shadow 260ms ease,
+    border-color 260ms ease;
 }
 
 .listing-card:hover {
@@ -627,7 +642,9 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 30px 70px -34px rgba(1, 42, 82, 0.65);
   transform-origin: 50% 110%;
-  transition: transform 420ms var(--ease-out), opacity 300ms ease;
+  transition:
+    transform 420ms var(--ease-out),
+    opacity 300ms ease;
   touch-action: pan-y;
   will-change: transform;
   cursor: grab;
@@ -674,7 +691,9 @@ button {
   text-transform: uppercase;
   opacity: 0;
   transform: rotate(-8deg) scale(0.8);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
 }
 
 .stack-stamp.like {
@@ -729,7 +748,9 @@ button {
   background: var(--surface);
   border: 1px solid var(--line);
   overflow: hidden;
-  transition: transform 260ms var(--ease-out), box-shadow 260ms ease;
+  transition:
+    transform 260ms var(--ease-out),
+    box-shadow 260ms ease;
 }
 
 .category-card:hover {
@@ -989,7 +1010,9 @@ button {
   border-radius: var(--radius-sm);
   background: var(--surface);
   font-size: 16px;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .textarea {
@@ -1147,7 +1170,9 @@ button {
   backdrop-filter: blur(14px) saturate(1.2);
   box-shadow: 0 12px 30px -16px rgba(1, 42, 82, 0.45);
   color: var(--ink-2);
-  transition: transform 160ms var(--ease-out), background 160ms ease;
+  transition:
+    transform 160ms var(--ease-out),
+    background 160ms ease;
 }
 
 .round-action:hover {
@@ -1829,7 +1854,9 @@ button {
   color: #fff;
   font-size: 14px;
   box-shadow: var(--shadow-soft);
-  transition: opacity 200ms ease, transform 200ms var(--ease-out);
+  transition:
+    opacity 200ms ease,
+    transform 200ms var(--ease-out);
   pointer-events: none;
 }
 
@@ -1862,7 +1889,12 @@ button {
   background: var(--surface-2);
   animation: shimmer 1.4s infinite linear;
   background-size: 200% 100%;
-  background-image: linear-gradient(100deg, var(--surface-2) 20%, #f7fafd 40%, var(--surface-2) 60%);
+  background-image: linear-gradient(
+    100deg,
+    var(--surface-2) 20%,
+    #f7fafd 40%,
+    var(--surface-2) 60%
+  );
 }
 
 /* Responsive -------------------------------------------------------------- */
@@ -2251,7 +2283,9 @@ button {
 }
 
 .reveal {
-  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+  transition:
+    opacity 600ms var(--ease-out),
+    transform 600ms var(--ease-out);
 }
 
 .reveal[data-visible="false"] {
@@ -3482,7 +3516,10 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  transition: transform 160ms var(--ease-out), border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms var(--ease-out),
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .quick-card:hover {
@@ -3948,7 +3985,9 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .chat-index-row:hover {
@@ -4790,7 +4829,9 @@ button {
   border-radius: 12px;
   background: var(--surface);
   text-align: left;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .purpose-card strong {
@@ -5239,7 +5280,9 @@ button {
   border-radius: 999px;
   background: var(--surface);
   color: var(--ink-2);
-  transition: transform 160ms var(--ease-out), background 160ms ease;
+  transition:
+    transform 160ms var(--ease-out),
+    background 160ms ease;
 }
 
 .tg-icon-button:active,
@@ -5286,7 +5329,9 @@ button {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  transition: color 160ms ease, background 160ms ease;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
 }
 
 .tg-nav a[aria-current="page"] {
@@ -5712,7 +5757,9 @@ button {
   background: var(--surface);
   color: var(--ink-2);
   box-shadow: var(--shadow-card);
-  transition: transform 160ms var(--ease-out), background 160ms ease;
+  transition:
+    transform 160ms var(--ease-out),
+    background 160ms ease;
 }
 
 .tg-round:active {

@@ -26,10 +26,7 @@ export const viewport: Viewport = {
 export default function MiniAppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthProvider initialUser={null} initialCsrf={null}>
-      <Script
-        src="https://telegram.org/js/telegram-web-app.js"
-        strategy="afterInteractive"
-      />
+      <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
       <MiniAppRoot>{children}</MiniAppRoot>
     </AuthProvider>
   );

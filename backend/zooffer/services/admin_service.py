@@ -104,9 +104,7 @@ async def dashboard(db: AsyncSession) -> AdminDashboardView:
         or 0
     )
     reports_open = int(
-        await db.scalar(
-            select(func.count()).select_from(Report).where(Report.status == "open")
-        )
+        await db.scalar(select(func.count()).select_from(Report).where(Report.status == "open"))
         or 0
     )
     support_open = int(
@@ -140,20 +138,12 @@ async def dashboard(db: AsyncSession) -> AdminDashboardView:
         await db.scalar(
             select(func.count())
             .select_from(Swipe)
-            .where(
-                Swipe.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0)
-            )
+            .where(Swipe.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0))
         )
         or 0
     )
-    matches_total = int(
-        await db.scalar(select(func.count()).select_from(Match)) or 0
-    )
-    rows = (
-        await db.scalars(
-            select(AuditLog).order_by(AuditLog.created_at.desc()).limit(10)
-        )
-    ).all()
+    matches_total = int(await db.scalar(select(func.count()).select_from(Match)) or 0)
+    rows = (await db.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(10))).all()
     recent = [
         AdminRecentItem(
             created_at=row.created_at,
@@ -204,7 +194,7 @@ async def list_listings(
     )
     rows = (await db.execute(stmt.order_by(Listing.created_at.desc()).limit(limit))).all()
     animal_ids = [row[1].id for row in rows]
-    photos = {}
+    photos: dict[UUID, AnimalPhoto] = {}
     if animal_ids:
         photo_rows = (
             await db.scalars(
@@ -264,10 +254,10 @@ async def moderate_listing(
             raise ValidationAppError(
                 "Нельзя опубликовать архивное животное", code="animal_archived"
             )
-        photo = await db.scalar(
+        photo_id = await db.scalar(
             select(AnimalPhoto.id).where(AnimalPhoto.animal_id == animal.id).limit(1)
         )
-        if photo is None:
+        if photo_id is None:
             raise ValidationAppError(
                 "Нельзя опубликовать объявление без фото", code="photo_required"
             )
@@ -408,15 +398,15 @@ async def list_users(
         await db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
     )
     rows = (await db.execute(stmt.order_by(User.created_at.desc()).limit(limit))).all()
-    counts = dict(
-        (
-            await db.execute(
-                select(Listing.owner_id, func.count())
-                .where(Listing.owner_id.in_([row[0].id for row in rows]))
-                .group_by(Listing.owner_id)
-            )
-        ).all()
-    )
+    listing_counts: dict[UUID, int] = {}
+    for owner_id, count in (
+        await db.execute(
+            select(Listing.owner_id, func.count())
+            .where(Listing.owner_id.in_([row[0].id for row in rows]))
+            .group_by(Listing.owner_id)
+        )
+    ).all():
+        listing_counts[owner_id] = count
     return (
         [
             AdminUserView(
@@ -426,7 +416,7 @@ async def list_users(
                 role=user.role,
                 status=user.status,
                 city_name=city.name if city else None,
-                listings_count=int(counts.get(user.id, 0)),
+                listings_count=int(listing_counts.get(user.id, 0)),
                 created_at=user.created_at,
                 mfa_enabled=user.mfa_enabled,
             )
@@ -581,18 +571,14 @@ async def get_settings(db: AsyncSession) -> list[AdminSettingView]:
     return items
 
 
-async def set_setting(
-    db: AsyncSession, actor: User, key: str, raw_value: str
-) -> AdminSettingView:
+async def set_setting(db: AsyncSession, actor: User, key: str, raw_value: str) -> AdminSettingView:
     if key not in SETTING_DEFAULTS:
         raise ValidationAppError("Неизвестный параметр", code="unknown_setting")
     try:
         parsed: Any = json.loads(raw_value)
     except json.JSONDecodeError:
         parsed = raw_value
-    if key == "free_daily_swipes" and (
-        not isinstance(parsed, int) or parsed < 0 or parsed > 1000
-    ):
+    if key == "free_daily_swipes" and (not isinstance(parsed, int) or parsed < 0 or parsed > 1000):
         raise ValidationAppError("Лимит должен быть целым числом от 0 до 1000")
     if key in {"enable_telegram", "enable_glass"} and not isinstance(parsed, bool):
         raise ValidationAppError("Значение должно быть true или false")
@@ -615,9 +601,7 @@ async def set_setting(
     await db.refresh(row)
     return AdminSettingView(
         key=key,
-        value=json.dumps(parsed, ensure_ascii=False)
-        if not isinstance(parsed, str)
-        else parsed,
+        value=json.dumps(parsed, ensure_ascii=False) if not isinstance(parsed, str) else parsed,
         updated_at=row.updated_at,
     )
 

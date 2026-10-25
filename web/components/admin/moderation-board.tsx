@@ -32,27 +32,34 @@ export function ModerationBoard({ initial }: { initial: AdminListingList }) {
   const [status, setStatus] = useState("pending_moderation");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [target, setTarget] = useState<{ listing: AdminListing; action: "approve" | "reject" } | null>(
-    null,
-  );
+  const [target, setTarget] = useState<{
+    listing: AdminListing;
+    action: "approve" | "reject";
+  } | null>(null);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async (nextStatus: string, nextQuery: string) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (nextStatus) params.set("status", nextStatus);
-      if (nextQuery.trim()) params.set("q", nextQuery.trim());
-      const data = await api<AdminListingList>(`/api/v1/admin/listings?${params.toString()}`);
-      setItems(data.items);
-      setTotal(data.total);
-    } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось загрузить очередь", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+  const load = useCallback(
+    async (nextStatus: string, nextQuery: string) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (nextStatus) params.set("status", nextStatus);
+        if (nextQuery.trim()) params.set("q", nextQuery.trim());
+        const data = await api<AdminListingList>(`/api/v1/admin/listings?${params.toString()}`);
+        setItems(data.items);
+        setTotal(data.total);
+      } catch (err) {
+        showToast(
+          err instanceof ClientApiError ? err.message : "Не удалось загрузить очередь",
+          "error",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showToast],
+  );
 
   const openDecision = (listing: AdminListing, action: "approve" | "reject") => {
     setTarget({ listing, action });
@@ -89,7 +96,10 @@ export function ModerationBoard({ initial }: { initial: AdminListingList }) {
         );
       }
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось применить решение", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось применить решение",
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -137,7 +147,10 @@ export function ModerationBoard({ initial }: { initial: AdminListingList }) {
       </div>
 
       <p className="muted small">
-        Найдено: {total}. {status === "pending_moderation" ? "Сначала проверяйте объявления с жалобами и контактами в тексте." : ""}
+        Найдено: {total}.{" "}
+        {status === "pending_moderation"
+          ? "Сначала проверяйте объявления с жалобами и контактами в тексте."
+          : ""}
       </p>
 
       {items.length === 0 ? (
@@ -181,9 +194,7 @@ export function ModerationBoard({ initial }: { initial: AdminListingList }) {
                   </div>
                   <div>
                     <dt>Цена</dt>
-                    <dd>
-                      {formatListingPrice(listing.purpose, listing.price_kopecks, false)}
-                    </dd>
+                    <dd>{formatListingPrice(listing.purpose, listing.price_kopecks, false)}</dd>
                   </div>
                   <div>
                     <dt>Создано</dt>

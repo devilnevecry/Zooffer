@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 
 import { SettingsPanel } from "@/components/settings-panel";
 import { requireMe } from "@/lib/auth-server";
-import { getBlockedUsers, getDictionaries, getNotificationPreferences, getSessions } from "@/lib/data";
+import {
+  getBlockedUsers,
+  getDictionaries,
+  getNotificationPreferences,
+  getSessions,
+} from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Настройки и приватность",

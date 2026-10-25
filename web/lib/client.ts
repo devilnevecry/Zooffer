@@ -55,7 +55,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     response = await fetch(path, {
       method,
       headers,
-      body: options.formData ?? (options.body !== undefined ? JSON.stringify(options.body) : undefined),
+      body:
+        options.formData ?? (options.body !== undefined ? JSON.stringify(options.body) : undefined),
       credentials: "same-origin",
       signal: options.signal,
     });

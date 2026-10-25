@@ -49,7 +49,10 @@ export function ListingManager({
       showToast(labels[action]);
       router.refresh();
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось обновить объявление", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось обновить объявление",
+        "error",
+      );
     } finally {
       setBusyId(null);
     }
@@ -60,8 +63,8 @@ export function ListingManager({
       <div className="empty-state">
         <h2>Здесь появятся ваши объявления</h2>
         <p>
-          Создайте анкету животного и расскажите, кого вы ищете. Черновик можно
-          сохранить и вернуться к нему позже.
+          Создайте анкету животного и расскажите, кого вы ищете. Черновик можно сохранить и
+          вернуться к нему позже.
         </p>
         <Link href={`${basePath}/listings/new`} className="btn btn-primary">
           <PlusIcon /> Создать объявление
@@ -79,9 +82,7 @@ export function ListingManager({
             <div className="manage-main">
               <div className="manage-top">
                 <StatusChip status={listing.status} />
-                <span className="muted small">
-                  Обновлено {formatDateTime(listing.updated_at)}
-                </span>
+                <span className="muted small">Обновлено {formatDateTime(listing.updated_at)}</span>
               </div>
               <h2>{listing.title}</h2>
               <p className="manage-description">
@@ -93,7 +94,9 @@ export function ListingManager({
                 <strong>
                   {formatListingPrice(listing.purpose, listing.price_kopecks, listing.negotiable)}
                 </strong>
-                {listing.published_at && <span>Опубликовано {formatDateTime(listing.published_at)}</span>}
+                {listing.published_at && (
+                  <span>Опубликовано {formatDateTime(listing.published_at)}</span>
+                )}
                 {listing.expires_at && <span>До {formatDateTime(listing.expires_at)}</span>}
               </div>
               {listing.moderation_reason && (
@@ -129,7 +132,9 @@ export function ListingManager({
                   </button>
                 </>
               )}
-              {(listing.status === "draft" || listing.status === "rejected" || listing.status === "pending_moderation") && (
+              {(listing.status === "draft" ||
+                listing.status === "rejected" ||
+                listing.status === "pending_moderation") && (
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"

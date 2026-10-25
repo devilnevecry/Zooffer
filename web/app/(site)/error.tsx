@@ -15,8 +15,8 @@ export default function SiteError({
           <span className="eyebrow">Ошибка</span>
           <h1>Что-то пошло не так</h1>
           <p>
-            Мы не смогли загрузить эту страницу. Попробуйте ещё раз — данные не
-            потеряны. Если ошибка повторяется, напишите в поддержку.
+            Мы не смогли загрузить эту страницу. Попробуйте ещё раз — данные не потеряны. Если
+            ошибка повторяется, напишите в поддержку.
           </p>
           <div className="btn-row">
             <button type="button" className="btn btn-primary" onClick={reset}>

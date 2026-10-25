@@ -6,16 +6,17 @@ import { useParams } from "next/navigation";
 import { InquiryButton } from "../inquiry-button";
 import { ListingGallery } from "../listing-gallery";
 import { ReportButton } from "../report-button";
-import {
-  HeartIcon,
-  PawIcon,
-  PinIcon,
-  ShareIcon,
-  ShieldIcon,
-} from "../icons";
+import { HeartIcon, PawIcon, PinIcon, ShareIcon, ShieldIcon } from "../icons";
 import { useToast } from "../toast-provider";
 import { api, ClientApiError } from "@/lib/client";
-import { formatAge, formatListingPrice, purposeLabel, sexLabel, sizeLabel, speciesLabel } from "@/lib/format";
+import {
+  formatAge,
+  formatListingPrice,
+  purposeLabel,
+  sexLabel,
+  sizeLabel,
+  speciesLabel,
+} from "@/lib/format";
 import type { FavoriteList, ListingDetail } from "@/lib/types";
 
 import { useTelegram } from "./telegram";
@@ -104,9 +105,7 @@ export function MiniListing() {
         </div>
 
         <div className="tg-price-row">
-          <strong>
-            {formatListingPrice(data.purpose, data.price_kopecks, data.negotiable)}
-          </strong>
+          <strong>{formatListingPrice(data.purpose, data.price_kopecks, data.negotiable)}</strong>
           {data.city && (
             <span>
               <PinIcon width={14} height={14} /> {data.city.name}
@@ -175,8 +174,8 @@ export function MiniListing() {
         <div className="tg-privacy">
           <ShieldIcon width={17} height={17} />
           <span>
-            Не отправляйте предоплату и коды из SMS. Контакты передавайте только когда
-            сами решите это сделать.
+            Не отправляйте предоплату и коды из SMS. Контакты передавайте только когда сами решите
+            это сделать.
           </span>
         </div>
 

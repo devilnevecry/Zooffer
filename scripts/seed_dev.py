@@ -577,7 +577,9 @@ def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
-def _gradient(size: tuple[int, int], start: tuple[int, int, int], end: tuple[int, int, int]) -> Image.Image:
+def _gradient(
+    size: tuple[int, int], start: tuple[int, int, int], end: tuple[int, int, int]
+) -> Image.Image:
     _width, height = size
     column = Image.new("RGB", (1, height))
     pixels = column.load()
@@ -589,9 +591,20 @@ def _gradient(size: tuple[int, int], start: tuple[int, int, int], end: tuple[int
     return column.resize(size)
 
 
-def _paw(draw: ImageDraw.ImageDraw, cx: int, cy: int, scale: float, fill: tuple[int, int, int, int]) -> None:
+def _paw(
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    cy: int,
+    scale: float,
+    fill: tuple[int, int, int, int],
+) -> None:
     draw.ellipse(
-        (cx - int(95 * scale), cy - int(55 * scale), cx + int(95 * scale), cy + int(110 * scale)),
+        (
+            cx - int(95 * scale),
+            cy - int(55 * scale),
+            cx + int(95 * scale),
+            cy + int(110 * scale),
+        ),
         fill=fill,
     )
     toes = [
@@ -637,7 +650,9 @@ def _placeholder_image(palette_index: int, variant: int) -> bytes:
     footer = Image.new("RGBA", size, (0, 0, 0, 0))
     footer_draw = ImageDraw.Draw(footer)
     footer_draw.rectangle((0, 1350, size[0], size[1]), fill=(24, 36, 54, 92))
-    footer_draw.text((64, 1402), "ZOOFFER · DEMO IMAGE", font=_font(38), fill=(255, 255, 255, 214))
+    footer_draw.text(
+        (64, 1402), "ZOOFFER · DEMO IMAGE", font=_font(38), fill=(255, 255, 255, 214)
+    )
     footer_draw.text(
         (64, 1452),
         "Placeholder generated for local development",
@@ -676,7 +691,9 @@ async def _seed_dictionaries(db) -> None:  # type: ignore[no-untyped-def]
                     )
                 )
     for species, slug, name in BREEDS:
-        breed = await db.scalar(select(Breed).where(Breed.species == species, Breed.slug == slug))
+        breed = await db.scalar(
+            select(Breed).where(Breed.species == species, Breed.slug == slug)
+        )
         if breed is None:
             db.add(Breed(species=species, name=name, slug=slug))
     await db.commit()
@@ -696,7 +713,9 @@ async def _seed_plans(db) -> None:  # type: ignore[no-untyped-def]
 async def _seed_partners(db) -> None:  # type: ignore[no-untyped-def]
     now = utcnow()
     for partner_spec in PARTNERS:
-        partner = await db.scalar(select(Partner).where(Partner.slug == partner_spec["slug"]))
+        partner = await db.scalar(
+            select(Partner).where(Partner.slug == partner_spec["slug"])
+        )
         if partner is None:
             partner = Partner(
                 name=partner_spec["name"],
@@ -762,7 +781,9 @@ async def _get_or_create_user(db, spec: dict[str, str], city_id: int) -> User:  
 async def _ensure_photos(db, animal: Animal, palette: int) -> int:  # type: ignore[no-untyped-def]
     existing = (
         await db.scalars(
-            select(AnimalPhoto).where(AnimalPhoto.animal_id == animal.id).order_by(AnimalPhoto.position)
+            select(AnimalPhoto)
+            .where(AnimalPhoto.animal_id == animal.id)
+            .order_by(AnimalPhoto.position)
         )
     ).all()
     created = 0
@@ -791,14 +812,18 @@ async def _seed_listing(db, spec: DemoListing) -> tuple[Animal, Listing]:  # typ
     if user is None:
         raise RuntimeError(f"demo user not found: {spec.owner_email}")
     breed = await db.scalar(
-        select(Breed).where(Breed.species == spec.species, Breed.slug == spec.breed_slug)
+        select(Breed).where(
+            Breed.species == spec.species, Breed.slug == spec.breed_slug
+        )
     )
     city = await db.scalar(select(City).where(City.slug == spec.city_slug))
     if city is None:
         raise RuntimeError(f"city not found: {spec.city_slug}")
 
     animal = await db.scalar(
-        select(Animal).where(Animal.owner_id == user.id, Animal.name == spec.animal_name)
+        select(Animal).where(
+            Animal.owner_id == user.id, Animal.name == spec.animal_name
+        )
     )
     if animal is None:
         animal = await listing_service.create_animal(
@@ -815,7 +840,9 @@ async def _seed_listing(db, spec: DemoListing) -> tuple[Animal, Listing]:  # typ
                 size=spec.size,  # type: ignore[arg-type]
                 has_pedigree=spec.has_pedigree,
                 pedigree_registry="FCI" if spec.has_pedigree else None,
-                pedigree_number=f"DEMO-{spec.animal_name.upper()}" if spec.has_pedigree else None,
+                pedigree_number=f"DEMO-{spec.animal_name.upper()}"
+                if spec.has_pedigree
+                else None,
                 vaccinated=spec.vaccinated,
                 health_notes="Плановые осмотры пройдены. Демонстрационные данные.",
                 description=spec.description,
@@ -849,7 +876,9 @@ async def _seed_listing(db, spec: DemoListing) -> tuple[Animal, Listing]:  # typ
 
 async def _ensure_favorite(db, user: User, listing: Listing) -> None:  # type: ignore[no-untyped-def]
     existing = await db.scalar(
-        select(Favorite).where(Favorite.user_id == user.id, Favorite.listing_id == listing.id)
+        select(Favorite).where(
+            Favorite.user_id == user.id, Favorite.listing_id == listing.id
+        )
     )
     if existing is None:
         db.add(Favorite(user_id=user.id, listing_id=listing.id))
@@ -928,11 +957,18 @@ async def _ensure_conversation(  # type: ignore[no-untyped-def]
 
 
 async def _ensure_match(  # type: ignore[no-untyped-def]
-    db, *, animal_a: Animal, animal_b: Animal, listing: Listing, messages: list[tuple[User, str, int]]
+    db,
+    *,
+    animal_a: Animal,
+    animal_b: Animal,
+    listing: Listing,
+    messages: list[tuple[User, str, int]],
 ) -> None:
     first_id, second_id = sorted((animal_a.id, animal_b.id), key=str)
     existing = await db.scalar(
-        select(Match).where(Match.animal_a_id == first_id, Match.animal_b_id == second_id)
+        select(Match).where(
+            Match.animal_a_id == first_id, Match.animal_b_id == second_id
+        )
     )
     first_animal = animal_a if animal_a.id == first_id else animal_b
     second_animal = animal_b if first_animal is animal_a else animal_a
@@ -974,7 +1010,9 @@ async def _seed_interactions(  # type: ignore[no-untyped-def]
 
     async def find_listing(owner: User, animal_name: str) -> tuple[Animal, Listing]:
         animal = await db.scalar(
-            select(Animal).where(Animal.owner_id == owner.id, Animal.name == animal_name)
+            select(Animal).where(
+                Animal.owner_id == owner.id, Animal.name == animal_name
+            )
         )
         if animal is None:
             raise RuntimeError(f"animal missing: {animal_name}")
@@ -1003,8 +1041,16 @@ async def _seed_interactions(  # type: ignore[no-untyped-def]
         animal_b=mikhail_luna,
         listing=mikhail_luna_listing,
         messages=[
-            (anna, "Здравствуйте! Луна и Тедди выглядят отличной парой. Расскажите о здоровье, пожалуйста.", 0),
-            (mikhail, "Здравствуйте! Луна полностью привита, есть документы. Будем рады знакомству.", 14),
+            (
+                anna,
+                "Здравствуйте! Луна и Тедди выглядят отличной парой. Расскажите о здоровье, пожалуйста.",
+                0,
+            ),
+            (
+                mikhail,
+                "Здравствуйте! Луна полностью привита, есть документы. Будем рады знакомству.",
+                14,
+            ),
             (anna, "Отлично! Давайте созвонимся и обсудим удобное время встречи.", 22),
             (mikhail, "Договорились. Напишите, пожалуйста, когда вам удобно.", 31),
         ],
@@ -1017,7 +1063,11 @@ async def _seed_interactions(  # type: ignore[no-untyped-def]
         animal_b=elena_barsik,
         listing=elena_barsik_listing,
         messages=[
-            (elena, "Здравствуйте! Барсик спокойный и привитый. Готовы познакомиться с Мией.", 0),
+            (
+                elena,
+                "Здравствуйте! Барсик спокойный и привитый. Готовы познакомиться с Мией.",
+                0,
+            ),
             (anna, "Здравствуйте! Спасибо за отклик. Мия тоже здорова и привита.", 18),
             (elena, "Когда вам удобно встретиться на нейтральной территории?", 35),
         ],
@@ -1031,8 +1081,16 @@ async def _seed_interactions(  # type: ignore[no-untyped-def]
         animal=anna_archie,
         participants=[mikhail, anna],
         message_specs=[
-            (mikhail, "Здравствуйте! Арчи ещё ищет дом? Расскажите, как он относится к детям.", 0),
-            (anna, "Здравствуйте! Да, ищет. С детьми ладит отлично, вырос в семье.", 20),
+            (
+                mikhail,
+                "Здравствуйте! Арчи ещё ищет дом? Расскажите, как он относится к детям.",
+                0,
+            ),
+            (
+                anna,
+                "Здравствуйте! Да, ищет. С детьми ладит отлично, вырос в семье.",
+                20,
+            ),
             (mikhail, "Спасибо! Можно ли приехать познакомиться на выходных?", 47),
             (anna, "Конечно. Напишите, пожалуйста, в какое время вам удобно.", 66),
         ],
@@ -1040,8 +1098,18 @@ async def _seed_interactions(  # type: ignore[no-untyped-def]
 
     # Notifications for the primary demo account.
     notifications = [
-        ("matches", "Новая пара", "У вас взаимная симпатия с Луной.", {"kind": "match"}),
-        ("messages", "Новое сообщение", "Михаил написал вам по объявлению «Арчи».", {"kind": "message"}),
+        (
+            "matches",
+            "Новая пара",
+            "У вас взаимная симпатия с Луной.",
+            {"kind": "match"},
+        ),
+        (
+            "messages",
+            "Новое сообщение",
+            "Михаил написал вам по объявлению «Арчи».",
+            {"kind": "message"},
+        ),
         (
             "listing_moderation",
             "Объявление опубликовано",
@@ -1090,14 +1158,16 @@ async def seed(*, reset: bool = False) -> None:
             emails = [spec["email"] for spec in DEMO_USER_SPECS]
             demo_users = [
                 user
-                for user in [await auth_service.find_user_by_email(db, email) for email in emails]
+                for user in [
+                    await auth_service.find_user_by_email(db, email) for email in emails
+                ]
                 if user is not None
             ]
             demo_ids = [user.id for user in demo_users]
             if demo_ids:
-                conversation_ids = select(ConversationParticipant.conversation_id).where(
-                    ConversationParticipant.user_id.in_(demo_ids)
-                )
+                conversation_ids = select(
+                    ConversationParticipant.conversation_id
+                ).where(ConversationParticipant.user_id.in_(demo_ids))
                 await db.execute(
                     delete(Conversation).where(Conversation.id.in_(conversation_ids))
                 )
@@ -1166,7 +1236,9 @@ DEMO_USER_SPECS = [
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Seed the Zooffer development database.")
+    parser = argparse.ArgumentParser(
+        description="Seed the Zooffer development database."
+    )
     parser.add_argument(
         "--reset",
         action="store_true",

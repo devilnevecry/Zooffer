@@ -12,11 +12,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function EditListingPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await requireMe(`/account/listings/${id}/edit`);
   const [listing, animals, dictionaries] = await Promise.all([
@@ -26,9 +22,7 @@ export default async function EditListingPage({
   ]);
   if (!listing) notFound();
 
-  const animal = animals?.items.find(
-    (item) => item.public_id === listing.animal_public_id,
-  );
+  const animal = animals?.items.find((item) => item.public_id === listing.animal_public_id);
   if (!animal) notFound();
 
   return (
@@ -45,19 +39,15 @@ export default async function EditListingPage({
           <span className="eyebrow">Мастер размещения</span>
           <h1>Редактирование</h1>
           <p className="muted">
-            Изменения опубликованного объявления отправляются на повторную проверку,
-            чтобы описание не расходилось с фотографиями.
+            Изменения опубликованного объявления отправляются на повторную проверку, чтобы описание
+            не расходилось с фотографиями.
           </p>
         </div>
         <Link href="/account/listings" className="btn btn-ghost btn-sm">
           <ArrowIcon width={15} height={15} /> К объявлениям
         </Link>
       </div>
-      <ListingWizard
-        dictionaries={dictionaries}
-        initialListing={listing}
-        initialAnimal={animal}
-      />
+      <ListingWizard dictionaries={dictionaries} initialListing={listing} initialAnimal={animal} />
     </>
   );
 }

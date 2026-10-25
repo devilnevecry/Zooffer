@@ -22,13 +22,12 @@ export function AuthShell({
           <span className="eyebrow">{eyebrow}</span>
           <h2>Хорошие знакомства начинаются с доверия</h2>
           <p>
-            Один аккаунт для сайта и Telegram. Контакты скрыты, совпадения только
-            взаимные, а переписка остаётся внутри Zooffer.
+            Один аккаунт для сайта и Telegram. Контакты скрыты, совпадения только взаимные, а
+            переписка остаётся внутри Zooffer.
           </p>
           <ul className="auth-points">
             <li>
-              <ShieldIcon width={18} height={18} /> Только имя и объявление видны
-              другим
+              <ShieldIcon width={18} height={18} /> Только имя и объявление видны другим
             </li>
             <li>
               <SparkIcon width={18} height={18} /> Подбор без случайных сообщений

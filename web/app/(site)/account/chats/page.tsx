@@ -23,8 +23,8 @@ export default async function ChatsPage() {
           <span className="eyebrow">Общение</span>
           <h1>Сообщения</h1>
           <p className="muted">
-            Переписка хранится на сервере и доступна на сайте, в боте и Mini App.
-            Контакты остаются скрытыми, пока вы сами ими не поделитесь.
+            Переписка хранится на сервере и доступна на сайте, в боте и Mini App. Контакты остаются
+            скрытыми, пока вы сами ими не поделитесь.
           </p>
         </div>
       </div>
@@ -34,8 +34,8 @@ export default async function ChatsPage() {
           <ChatIcon width={44} height={44} />
           <h2>Переписок пока нет</h2>
           <p>
-            Напишите владельцу из объявления или дождитесь взаимного совпадения —
-            диалог появится здесь.
+            Напишите владельцу из объявления или дождитесь взаимного совпадения — диалог появится
+            здесь.
           </p>
           <Link href="/search" className="btn btn-primary">
             Смотреть объявления
@@ -67,7 +67,9 @@ export default async function ChatsPage() {
                   </span>
                 </span>
                 <span className="chat-index-listing">
-                  {chat.listing ? `${chat.listing.animal_name} · ${chat.listing.title}` : "Совпадение"}
+                  {chat.listing
+                    ? `${chat.listing.animal_name} · ${chat.listing.title}`
+                    : "Совпадение"}
                 </span>
                 <span className="chat-item-preview">
                   {chat.last_message
@@ -75,9 +77,7 @@ export default async function ChatsPage() {
                     : "Диалог открыт — напишите первым"}
                 </span>
               </span>
-              {chat.unread_count > 0 && (
-                <span className="chat-unread">{chat.unread_count}</span>
-              )}
+              {chat.unread_count > 0 && <span className="chat-unread">{chat.unread_count}</span>}
               {chat.blocked && <span className="chip chip-danger">Заблокирован</span>}
             </Link>
           ))}

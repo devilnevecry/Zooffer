@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 
 export default async function MyListingsPage() {
   await requireMe("/account/listings");
-  const listings = (await serverFetch<OwnerListing[]>("/api/v1/listings", { allow401: true })) ?? [];
+  const listings =
+    (await serverFetch<OwnerListing[]>("/api/v1/listings", { allow401: true })) ?? [];
 
   return (
     <>
@@ -23,8 +24,8 @@ export default async function MyListingsPage() {
           <span className="eyebrow">Объявления</span>
           <h1>Мои объявления</h1>
           <p className="muted">
-            Публикуйте, приостанавливайте и обновляйте объявления. После правок
-            объявление проходит повторную проверку.
+            Публикуйте, приостанавливайте и обновляйте объявления. После правок объявление проходит
+            повторную проверку.
           </p>
         </div>
         <Link href="/account/listings/new" className="btn btn-primary">

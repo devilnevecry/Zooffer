@@ -8,7 +8,10 @@ const legal = ["rules", "privacy", "terms", "personal-data", "requisites", "offe
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const now = new Date();
-  const [home, latest] = await Promise.all([getHome(), searchListings({ limit: 100, sort: "newest" })]);
+  const [home, latest] = await Promise.all([
+    getHome(),
+    searchListings({ limit: 100, sort: "newest" }),
+  ]);
 
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: "daily", priority: 1 },

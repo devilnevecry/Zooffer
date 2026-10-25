@@ -13,8 +13,6 @@ const toneByStatus: Record<string, string> = {
 
 export function StatusChip({ status }: { status: string }) {
   return (
-    <span className={`chip ${toneByStatus[status] ?? ""}`}>
-      {STATUS_LABELS[status] ?? status}
-    </span>
+    <span className={`chip ${toneByStatus[status] ?? ""}`}>{STATUS_LABELS[status] ?? status}</span>
   );
 }

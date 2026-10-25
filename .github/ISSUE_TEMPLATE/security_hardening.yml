@@ -1,0 +1,55 @@
+name: Security hardening task
+description: Track a non-confidential hardening item from the threat model or security review.
+title: "security: "
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template only for non-confidential hardening work. Report exploitable
+        vulnerabilities privately per SECURITY.md.
+  - type: textarea
+    id: finding
+    attributes:
+      label: Finding
+      description: What weakness or missing control was identified?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Which asset, actor and abuse case are involved?
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  - type: textarea
+    id: remediation
+    attributes:
+      label: Proposed remediation
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Which test, scanner or manual check proves the fix?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: This issue contains no exploit details that must stay private.
+          required: true
+        - label: I linked the relevant docs/SECURITY_REPORT.md or threat-model item.
+          required: true

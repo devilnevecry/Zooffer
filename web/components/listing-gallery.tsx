@@ -7,13 +7,7 @@ import type { PhotoView } from "@/lib/types";
 import { ArrowIcon, CloseIcon, PawIcon } from "./icons";
 import { Modal } from "./modal";
 
-export function ListingGallery({
-  photos,
-  title,
-}: {
-  photos: PhotoView[];
-  title: string;
-}) {
+export function ListingGallery({ photos, title }: { photos: PhotoView[]; title: string }) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const index = photos.length > 0 ? Math.min(active, photos.length - 1) : 0;
@@ -39,7 +33,12 @@ export function ListingGallery({
     <div className="gallery">
       <div className="gallery-main">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={current.url} alt={current.alt ?? title} width={current.width} height={current.height} />
+        <img
+          src={current.url}
+          alt={current.alt ?? title}
+          width={current.width}
+          height={current.height}
+        />
         <button
           type="button"
           className="gallery-open"
@@ -48,10 +47,20 @@ export function ListingGallery({
         />
         {photos.length > 1 && (
           <div className="gallery-arrows">
-            <button type="button" className="round-action" onClick={() => go(-1)} aria-label="Предыдущее фото">
+            <button
+              type="button"
+              className="round-action"
+              onClick={() => go(-1)}
+              aria-label="Предыдущее фото"
+            >
               <ArrowIcon style={{ transform: "rotate(180deg)" }} />
             </button>
-            <button type="button" className="round-action" onClick={() => go(1)} aria-label="Следующее фото">
+            <button
+              type="button"
+              className="round-action"
+              onClick={() => go(1)}
+              aria-label="Следующее фото"
+            >
               <ArrowIcon />
             </button>
           </div>

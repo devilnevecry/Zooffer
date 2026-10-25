@@ -216,14 +216,10 @@ async def verify_totp(db: AsyncSession, user_id: UUID, code: str) -> bool:
 async def setup_totp(db: AsyncSession, user: User) -> tuple[str, str]:
     """Create (or replace an unconfirmed) TOTP factor and return its provisioning URI."""
     confirmed = await db.scalar(
-        select(MfaFactor).where(
-            MfaFactor.user_id == user.id, MfaFactor.confirmed_at.is_not(None)
-        )
+        select(MfaFactor).where(MfaFactor.user_id == user.id, MfaFactor.confirmed_at.is_not(None))
     )
     if confirmed is not None:
-        raise ConflictError(
-            "Двухфакторная аутентификация уже включена", code="mfa_already_enabled"
-        )
+        raise ConflictError("Двухфакторная аутентификация уже включена", code="mfa_already_enabled")
     factor = await db.scalar(
         select(MfaFactor).where(MfaFactor.user_id == user.id, MfaFactor.factor_type == "totp")
     )
@@ -242,8 +238,8 @@ async def setup_totp(db: AsyncSession, user: User) -> tuple[str, str]:
         factor.last_used_counter = None
     await db.commit()
     private = await db.get(UserPrivateData, user.id)
-    account_name = private.email_encrypted if private and private.email_encrypted else str(
-        user.public_id
+    account_name = (
+        private.email_encrypted if private and private.email_encrypted else str(user.public_id)
     )
     uri = pyotp.TOTP(secret).provisioning_uri(name=account_name, issuer_name="Zooffer")
     return secret, uri

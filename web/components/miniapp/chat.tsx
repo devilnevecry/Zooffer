@@ -13,12 +13,5 @@ export function MiniChat({ conversationId }: { conversationId: string }) {
   if (loading && !data) return <MiniLoading label="Открываем диалог…" />;
   if (error && !data) return <MiniError message={error} onRetry={reload} />;
 
-  return (
-    <ChatPanel
-      initial={data}
-      basePath="/tg"
-      listingPath="/tg/listing"
-      compact
-    />
-  );
+  return <ChatPanel initial={data} basePath="/tg" listingPath="/tg/listing" compact />;
 }

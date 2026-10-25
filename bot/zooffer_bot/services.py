@@ -188,9 +188,7 @@ async def mark_conversation_read(
     await messaging_service.mark_read(db, user.id, conversation_public_id)
 
 
-async def send_message(
-    db: AsyncSession, user: User, conversation_public_id: UUID, body: str
-):
+async def send_message(db: AsyncSession, user: User, conversation_public_id: UUID, body: str):
     return await messaging_service.send_message(db, user, conversation_public_id, body)
 
 
@@ -200,9 +198,7 @@ async def start_inquiry(
     return await messaging_service.start_inquiry(db, user, listing_public_id, message)
 
 
-async def owned_listings(
-    db: AsyncSession, user: User
-) -> list[tuple[Listing, Animal, bool]]:
+async def owned_listings(db: AsyncSession, user: User) -> list[tuple[Listing, Animal, bool]]:
     rows = (
         await db.execute(
             select(Listing, Animal)
@@ -214,9 +210,7 @@ async def owned_listings(
     result: list[tuple[Listing, Animal, bool]] = []
     for listing, animal in rows:
         photo_count = await db.scalar(
-            select(func.count())
-            .select_from(AnimalPhoto)
-            .where(AnimalPhoto.animal_id == animal.id)
+            select(func.count()).select_from(AnimalPhoto).where(AnimalPhoto.animal_id == animal.id)
         )
         result.append((listing, animal, bool(photo_count)))
     return result
@@ -237,9 +231,7 @@ async def owned_listing(
 
         raise NotFoundError("Объявление не найдено", code="listing_not_found")
     photo_count = await db.scalar(
-        select(func.count())
-        .select_from(AnimalPhoto)
-        .where(AnimalPhoto.animal_id == row[1].id)
+        select(func.count()).select_from(AnimalPhoto).where(AnimalPhoto.animal_id == row[1].id)
     )
     return row[0], row[1], bool(photo_count)
 
@@ -248,9 +240,7 @@ async def find_city(db: AsyncSession, value: str) -> City | None:
     cleaned = value.strip()
     if not cleaned:
         return None
-    return await db.scalar(
-        select(City).where(func.lower(City.name) == cleaned.lower()).limit(1)
-    )
+    return await db.scalar(select(City).where(func.lower(City.name) == cleaned.lower()).limit(1))
 
 
 async def add_photo(
@@ -331,9 +321,7 @@ async def record_referral(db: AsyncSession, invitee: User, code: str) -> bool:
     )
     if inviter is None or inviter.id == invitee.id:
         return False
-    existing = await db.scalar(
-        select(Referral.id).where(Referral.invitee_id == invitee.id)
-    )
+    existing = await db.scalar(select(Referral.id).where(Referral.invitee_id == invitee.id))
     if existing is not None:
         return False
     db.add(
@@ -370,9 +358,7 @@ async def record_campaign(db: AsyncSession, user: User, parts: list[str]) -> boo
     return True
 
 
-async def create_support_ticket(
-    db: AsyncSession, user: User, *, subject: str, message: str
-):
+async def create_support_ticket(db: AsyncSession, user: User, *, subject: str, message: str):
     if len(subject.strip()) < 3:
         raise ValidationAppError("Тема должна быть не короче 3 символов", code="invalid_subject")
     if len(message.strip()) < 10:

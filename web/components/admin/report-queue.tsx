@@ -48,18 +48,24 @@ export function ReportQueue({ initial }: { initial: AdminReportList }) {
   const [resolution, setResolution] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async (nextStatus: string) => {
-    setLoading(true);
-    try {
-      const query = nextStatus ? `?status=${nextStatus}` : "";
-      const data = await api<AdminReportList>(`/api/v1/admin/reports${query}`);
-      setItems(data.items);
-    } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось загрузить жалобы", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+  const load = useCallback(
+    async (nextStatus: string) => {
+      setLoading(true);
+      try {
+        const query = nextStatus ? `?status=${nextStatus}` : "";
+        const data = await api<AdminReportList>(`/api/v1/admin/reports${query}`);
+        setItems(data.items);
+      } catch (err) {
+        showToast(
+          err instanceof ClientApiError ? err.message : "Не удалось загрузить жалобы",
+          "error",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showToast],
+  );
 
   const openDecision = (report: AdminReport, nextStatus: string) => {
     setTarget({ report, status: nextStatus });
@@ -84,12 +90,13 @@ export function ReportQueue({ initial }: { initial: AdminReportList }) {
       if (status && status !== updated.status) {
         setItems((current) => current.filter((item) => item.id !== updated.id));
       } else {
-        setItems((current) =>
-          current.map((item) => (item.id === updated.id ? updated : item)),
-        );
+        setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       }
     } catch (err) {
-      showToast(err instanceof ClientApiError ? err.message : "Не удалось обновить жалобу", "error");
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось обновить жалобу",
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -183,8 +190,8 @@ export function ReportQueue({ initial }: { initial: AdminReportList }) {
       <Modal open={target !== null} onClose={() => setTarget(null)} title="Решение по жалобе">
         <form onSubmit={submit}>
           <p className="modal-lead">
-            Решение сохранится в журнале. Для жалоб на сообщения проверьте переписку в
-            поддержке, если нужен контекст.
+            Решение сохранится в журнале. Для жалоб на сообщения проверьте переписку в поддержке,
+            если нужен контекст.
           </p>
           <div className="field">
             <label htmlFor="report-resolution">Комментарий</label>

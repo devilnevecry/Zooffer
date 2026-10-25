@@ -27,8 +27,7 @@ export default async function CheckoutPage({
           <span className="eyebrow">Zooffer Plus</span>
           <h1>Оплата</h1>
           <p className="muted">
-            Проверьте тариф и сумму. Платёжные данные вводятся только у платёжного
-            провайдера.
+            Проверьте тариф и сумму. Платёжные данные вводятся только у платёжного провайдера.
           </p>
         </div>
       </div>

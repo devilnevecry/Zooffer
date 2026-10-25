@@ -23,8 +23,8 @@ export default async function AccountAnimalsPage() {
           <span className="eyebrow">Анкеты</span>
           <h1>Мои животные</h1>
           <p className="muted">
-            Фотографии, здоровье и родословная хранятся в одном профиле. Документы
-            видны только вам и модерации.
+            Фотографии, здоровье и родословная хранятся в одном профиле. Документы видны только вам
+            и модерации.
           </p>
         </div>
         <Link href="/account/listings/new" className="btn btn-primary">
