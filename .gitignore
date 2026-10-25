@@ -49,6 +49,9 @@ Thumbs.db
 .vscode/
 *.swp
 
+# Local run logs
+.run/
+
 # Tooling artefacts
 playwright-report/
 test-results/

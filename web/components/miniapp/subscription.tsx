@@ -29,13 +29,20 @@ export function MiniSubscription() {
   }
 
   const current = state.data ?? fallback;
+  // Digital goods inside Telegram require Stars. Until the Stars flow exists,
+  // the Mini App must not open a card checkout or an external payment link.
+  const telegramState: SubscriptionState = {
+    ...current,
+    payments_available: false,
+    payments_demo: false,
+  };
 
   return (
     <div className="tg-stack">
       <MiniPageHead
         eyebrow="Zooffer Plus"
         title="Подписка"
-        lead="План, дневной лимит показов и управление автопродлением."
+        lead="План, дневной лимит показов и управление подпиской."
       />
 
       {!current.payments_available && (
@@ -50,10 +57,10 @@ export function MiniSubscription() {
       )}
 
       <SubscriptionManager
-        initial={current}
+        initial={telegramState}
         plans={plans.data?.items ?? []}
         legalPath="/legal/offer"
-        checkoutPath="/tg/subscription/checkout"
+        unavailableNote="Покупка подписки в Telegram Stars пока недоступна. Списаний нет, внешние платёжные ссылки для цифровых товаров в Telegram не используются."
       />
     </div>
   );

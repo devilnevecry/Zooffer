@@ -88,6 +88,9 @@ external worker are documented as pending work; do not claim production-grade de
   continuity as a fallback.
 - Telegram first name is only a suggestion for the public name; it is validated by
   `validate_display_name`. Other users see only the public name or «Владелец».
+- `/buy` reports that a Telegram Stars purchase flow is not implemented yet and never implies a
+  fake purchase. Digital goods inside Telegram must use Stars; no external card link is offered,
+  even when the website's YooKassa provider is live. Telegram Stars remain `BLOCKED` (B5).
 
 ## Privacy in Telegram
 
@@ -109,7 +112,8 @@ also respect the `in_app` preference.
 `/tg` (discovery), `/tg/search`, `/tg/listing/[slug]`, `/tg/favorites`, `/tg/matches`, `/tg/chats`,
 `/tg/listings`, `/tg/listings/new`, `/tg/profile`, `/tg/subscription`, `/tg/partners`, `/tg/support`.
 The Mini App uses `MiniAppChrome` with a bottom tab bar. It does not duplicate business logic; it calls
-the same backend API.
+the same backend API. Subscription purchase inside the Mini App is disabled until the Telegram Stars
+flow exists; no card checkout route is exposed under `/tg`.
 
 ## Live verification checklist (blocked)
 

@@ -44,7 +44,7 @@
 | Requirement | Implementation | Status |
 |---|---|---|
 | Price and terms before payment | Plan cards, period, cancellation and refund summary | Implemented |
-| Recurring payment consent | No silent auto-renewal; cancellation path visible | Implemented (design) |
+| Recurring payment consent | No automatic charges: each period requires a new payment, and the cancellation path is visible | Implemented (design) |
 | Receipts / 54-ФЗ online cashier | Not integrated | **BLOCKED** (B4) |
 | Refund path | Admin refund revokes entitlement; provider refund call implemented | Fake verified; real provider `BLOCKED` |
 | Consistent pricing across web and Telegram | Stars pricing requires a documented conversion policy | **REVIEW** (B5) |

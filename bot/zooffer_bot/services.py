@@ -280,7 +280,13 @@ async def mark_sold(db: AsyncSession, user: User, public_id: UUID) -> Listing:
 
 
 def payments_available() -> bool:
-    return billing_service.payments_available()
+    """Telegram Stars purchase flow is not implemented yet.
+
+    Digital goods inside Telegram must use Stars; a card-link flow would violate
+    current Telegram policy and is therefore never offered here. The website and
+    Mini App billing endpoints remain separate until Stars is implemented (B5).
+    """
+    return False
 
 
 async def plan_views(db: AsyncSession) -> list[PlanView]:

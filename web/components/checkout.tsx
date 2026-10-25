@@ -122,7 +122,7 @@ export function CheckoutPanel({
 
   return (
     <div className="checkout-panel">
-      {order.demo && (
+      {order.demo && payable && (
         <div className="notice warn">
           <ShieldIcon width={18} height={18} />
           <span>

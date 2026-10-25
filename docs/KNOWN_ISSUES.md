@@ -13,7 +13,7 @@ Updated: 2026-10-24. Severity: Critical / High / Medium / Low.
 | K7 | Low | Git | Initial work was committed as a consolidated bootstrap; phase tags start from that commit | Accepted |
 | K8 | High | Telegram | Bot/Mini App live behaviour is unverified without a token and HTTPS domain | Blocked (B2/B3) |
 | K9 | High | Payments | YooKassa adapter has not run against a sandbox shop; unsigned webhooks need IP allow-listing at the proxy | Blocked (B4) |
-| K10 | Medium | Payments | Telegram Stars purchase flow is not implemented; bot honestly reports unavailability | Blocked (B5) |
+| K10 | Medium | Payments | Telegram Stars purchase flow is not implemented; bot and Mini App state that online payment is unavailable and expose no card checkout | Blocked (B5) |
 | K11 | Medium | Reliability | Bot update queue is in-process and non-durable; a durable queue is pending | Open |
 | K12 | Medium | Security | No ZAP/Bandit/npm audit/dependency CVE scan was run in this environment | Open |
 | K13 | Medium | e2e | No Playwright/load tests; browser QA was manual | Open |

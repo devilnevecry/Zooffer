@@ -16,7 +16,7 @@ Status labels follow master prompt §0.3: `VERIFIED`, `IMPLEMENTED-UNVERIFIED`, 
 | §4.7 Homepage sections | `VERIFIED` | All required sections render from API with empty states | `web/app/(site)/page.tsx`; local run |
 | §4.8 Motion | `VERIFIED` | CSS entrance/reveal motion plus reduced-motion override | `globals.css`; manual QA |
 | §4.10 Responsive | `VERIFIED` | Mobile-first layouts; no horizontal overflow on account/admin grids | 390/1280 QA |
-| §4.11 Page inventory | `VERIFIED` | Public, auth, account, admin, legal, support, partners, `/tg/*` | `next build` route table (54 routes) |
+| §4.11 Page inventory | `VERIFIED` | Public, auth, account, admin, legal, support, partners, `/tg/*` | `next build` route table (56 routes) |
 | §4.11.1 Listing wizard | `VERIFIED` | Server-autosaved draft wizard on web and Mini App | `test_listings.py`, manual QA |
 | §5 Data model | `VERIFIED` | ~56 tables, 3 Alembic migrations | `alembic upgrade head`; `pytest` schema tests |
 | §6.1 Discovery/search/filters | `VERIFIED` | Feed, FTS, filters, keyset pagination, URL state | `test_listings.py`, `test_discovery.py` |
@@ -34,7 +34,7 @@ Status labels follow master prompt §0.3: `VERIFIED`, `IMPLEMENTED-UNVERIFIED`, 
 | §8.4 Mini App | `IMPLEMENTED-UNVERIFIED` (live) | `/tg/*` screens, `initData` session, WebApp SDK, same API/design | `next build`, local QA; live `BLOCKED` (B3) |
 | §8.5 Bot production operation | `IMPLEMENTED-UNVERIFIED` | Webhook secret/dedupe/queue, health, docs | No public HTTPS host (B2/B7) |
 | §9.1 Plans/entitlements | `VERIFIED` | DB plans, server-derived entitlements, placeholder-price flag | `test_payments.py`, `test_account.py` |
-| §9.2 Providers | `IMPLEMENTED-UNVERIFIED` / `BLOCKED` | Fake provider verified; YooKassa adapter written but not sandbox-run; Stars unavailable | B4/B5; `docs/PAYMENTS.md` |
+| §9.2 Providers | `IMPLEMENTED-UNVERIFIED` / `BLOCKED` | Fake provider verified; YooKassa adapter written but not sandbox-run; Stars unavailable. Bot and Mini App expose no card checkout for the digital subscription (Telegram policy) | B4/B5; `docs/PAYMENTS.md` |
 | §9.3 Payment engineering | `VERIFIED` (fake) | Server pricing, verified webhook path, replay/idempotency, refund/revoke, admin grant/reconcile | `test_payments.py` (5 tests); real provider `BLOCKED` |
 | §10 Partner program | `VERIFIED` | Offers, public page, click tracking, inquiry, ad-label fields, zero-partner empty state | `test_account.py`, manual QA |
 | §11 SEO/growth | `VERIFIED` | SSR pages, metadata, sitemap, robots, JSON-LD, OG, canonicals | `next build`; route inspection |

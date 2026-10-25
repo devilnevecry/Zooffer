@@ -25,11 +25,13 @@ export function SubscriptionManager({
   plans,
   legalPath = "/legal/offer",
   checkoutPath = "/account/subscription/checkout",
+  unavailableNote,
 }: {
   initial: SubscriptionState;
   plans: Plan[];
   legalPath?: string;
   checkoutPath?: string;
+  unavailableNote?: string;
 }) {
   const showToast = useToast();
   const router = useRouter();
@@ -40,7 +42,7 @@ export function SubscriptionManager({
   const cancel = async () => {
     if (
       !window.confirm(
-        "Отменить продление подписки? Доступ сохранится до конца оплаченного периода.",
+        "Отменить подписку? Доступ сохранится до конца оплаченного периода, новые платежи не списываются.",
       )
     ) {
       return;
@@ -49,7 +51,7 @@ export function SubscriptionManager({
     try {
       const updated = await api<SubscriptionState>("/api/v1/billing/cancel", { method: "POST" });
       setState(updated);
-      showToast("Автопродление отменено", "success");
+      showToast("Подписка отменена", "success");
     } catch (err) {
       showToast(
         err instanceof ClientApiError ? err.message : "Не удалось отменить подписку",
@@ -92,8 +94,8 @@ export function SubscriptionManager({
           <p className="muted">
             {active && state.current_period_end
               ? state.cancel_at_period_end
-                ? `Подписка действует до ${formatDate(state.current_period_end)}, автопродление отключено.`
-                : `Подписка действует до ${formatDate(state.current_period_end)} и продлится автоматически.`
+                ? `Подписка отменена. Доступ сохранится до ${formatDate(state.current_period_end)} — новых списаний не будет.`
+                : `Подписка действует до ${formatDate(state.current_period_end)} Автоматических списаний нет — продление только по новой оплате.`
               : "Базовый доступ: подбор, объявления, избранное и переписка."}
           </p>
         </div>
@@ -110,7 +112,7 @@ export function SubscriptionManager({
             onClick={() => void cancel()}
             disabled={busy}
           >
-            {busy ? "Отменяем…" : "Отменить автопродление"}
+            {busy ? "Отменяем…" : "Отменить подписку"}
           </button>
         )}
       </section>
@@ -119,9 +121,8 @@ export function SubscriptionManager({
         <div className="notice warn">
           <ShieldIcon width={18} height={18} />
           <span>
-            Онлайн-оплата пока недоступна: не настроены платёжные реквизиты. Цены ниже —
-            демонстрационные и будут изменены до запуска. Оформить платный план сейчас
-            нельзя, списаний не происходит.
+            {unavailableNote ??
+              "Онлайн-оплата пока недоступна: не настроены платёжные реквизиты. Цены ниже — демонстрационные и будут изменены до запуска. Оформить платный план сейчас нельзя, списаний не происходит."}
           </span>
         </div>
       )}
@@ -151,7 +152,10 @@ export function SubscriptionManager({
             <p className="muted">Базовый доступ навсегда</p>
             <ul className="plan-list">
               <li>
-                <CheckIcon width={15} height={15} /> {state.quota_limit} свайпов в день
+                <CheckIcon width={15} height={15} />{" "}
+                {state.quota_unlimited
+                  ? "Базовый дневной лимит свайпов"
+                  : `${state.quota_limit} свайпов в день`}
               </li>
               <li>
                 <CheckIcon width={15} height={15} /> Объявления и избранное
@@ -165,7 +169,9 @@ export function SubscriptionManager({
             </span>
           </article>
 
-          {plans.map((plan) => {
+          {plans
+            .filter((plan) => plan.price_kopecks > 0)
+            .map((plan) => {
             const current = state.plan_code === plan.code && active;
             return (
               <article className="plan-card featured" key={plan.code}>
@@ -218,9 +224,9 @@ export function SubscriptionManager({
         </div>
         <div className="legal-summary">
           <p>
-            Подписка не продлевается без вашего согласия. Отменить автопродление можно
-            в этой комнате в любой момент — доступ сохранится до конца оплаченного
-            периода.
+            Подписка не продлевается автоматически: новые платежи не списываются без
+            вашей оплаты. Отменить подписку можно в этом разделе — доступ сохранится до
+            конца оплаченного периода.
           </p>
           <p>
             Платёжные данные вводятся только на стороне платёжного провайдера. Zooffer

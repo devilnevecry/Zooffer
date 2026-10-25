@@ -229,7 +229,9 @@ async def test_webhook_signature_amount_and_order_ownership(
     assert current.json()["entitlements"] == []
 
 
-async def test_payments_unavailable_and_plan_validation(client: AsyncClient, db, monkeypatch) -> None:
+async def test_payments_unavailable_and_plan_validation(
+    client: AsyncClient, db, monkeypatch
+) -> None:
     await register(client, "blocked@example.com")
     await _plan(db)
     monkeypatch.setattr(settings, "payment_provider", "yookassa")

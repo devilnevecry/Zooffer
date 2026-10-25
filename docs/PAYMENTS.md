@@ -112,10 +112,16 @@ Important caveats:
 
 ## Telegram Stars
 
-Digital goods inside Telegram must use Stars (`XTR`) under current Telegram rules. The bot honestly
-reports that online payment is unavailable when no provider is configured; it does not fabricate a
-successful purchase. Stars invoices, `pre_checkout_query`, `successful_payment` and refunds require a
-real bot token and merchant setup (B5).
+Digital goods inside Telegram must use Stars (`XTR`) under current Telegram rules. The bot and Mini
+App therefore do **not** open a card checkout or an external payment link for the subscription, even
+when the website's YooKassa provider is live. `/buy` reports that online payment is unavailable until
+the Stars flow exists (B5); the Mini App's subscription screen disables purchase buttons and says
+the same. No fake purchase is offered.
+
+Stars invoices, `pre_checkout_query`, `successful_payment`, subscription invoice links and refunds
+require a real bot token and merchant setup. Telegram's policy on external payment links for digital
+goods must be re-checked against the current rules before adding any Stars flow; the current build
+deliberately avoids that route.
 
 ## Admin controls
 

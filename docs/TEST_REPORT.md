@@ -1,6 +1,6 @@
 # Test report
 
-Updated: 2026-10-24. Environment: Windows 11, Python 3.12.7, PostgreSQL 16 in Docker, pytest
+Updated: 2026-10-25. Environment: Windows 11, Python 3.12.7, PostgreSQL 16 in Docker, pytest
 `backend/tests`, ruff, Next.js 16 build.
 
 ## Command
@@ -13,13 +13,13 @@ $env:PYTHONPATH='backend'
 ## Latest result
 
 ```
-74 passed in 282.53s (0:04:42)
+74 passed in 281.89s (0:04:41)
 
 ruff check backend scripts bot: All checks passed
 python -m compileall bot: passed
 cd web && npm run typecheck: passed
 cd web && npm run lint: passed
-cd web && npm run build: passed (54 routes)
+cd web && npm run build: passed (56 routes)
 ```
 
 ## Coverage by area
@@ -50,7 +50,7 @@ cd web && npm run build: passed (54 routes)
 | Admin RBAC/MFA | `test_admin.py` | MFA required for staff, role matrix, moderation, audit, settings |
 | Reports | `test_reports.py` | User reports for listing/animal/message/user; participation and uniqueness rules |
 | Payments | `test_payments.py` | Server pricing, order reuse, demo confirmation, idempotency, bad signature, amount mismatch, ownership, refund, revoke, admin grant, reconcile |
-| Bot logic | `bot/tests` | Signed callbacks, onboarding, deep links, webhook validation, notification worker with fakes |
+| Bot logic | `test_bot.py` | Signed callbacks, onboarding, deep links, webhook validation, notification worker with fakes |
 
 ## Known gaps in this report
 
@@ -65,5 +65,11 @@ cd web && npm run build: passed (54 routes)
 - `docker compose -f compose.dev.yaml ps` → PostgreSQL and Redis healthy.
 - `alembic upgrade head` applies all migrations to the dev database.
 - `GET /healthz`, `GET /readyz`, `/api/docs` respond locally.
-- Website and Mini App visual QA at 390 px and 1280 px; admin, report modal and MFA settings checked.
-- Fake checkout flow creates an order, confirms it, and activates a subscription.
+- Website and Mini App visual QA at 390 px and 1280 px (mobile layout checked through a 390 px
+  iframe because the browser harness cannot emulate a device viewport); no horizontal page overflow.
+- Fake checkout: create order → checkout page → demo confirm → subscription activated; a replay is
+  idempotent. The demo notice disappears after payment and the success state renders.
+- Admin payment list and detail show the order, provider ID, event log and refund form; report modal
+  and MFA settings at `/account/settings#mfa` render and work.
+- The Mini App subscription screen disables purchase buttons until Telegram Stars exists; `/buy` in
+  the bot never offers a card link for a digital subscription.

@@ -1,6 +1,6 @@
 # Security report
 
-Updated: 2026-10-24. Scope: local repository and locally running services. No production deployment
+Updated: 2026-10-25. Scope: local repository and locally running services. No production deployment
 exists, so this is not a production penetration test.
 
 ## Automated checks actually run
@@ -12,7 +12,7 @@ exists, so this is not a production penetration test.
 | Python byte-compile (bot) | `compileall bot` | Passed |
 | Web typecheck | `npm run typecheck` | Passed |
 | Web lint | `npm run lint` | Passed |
-| Web production build | `npm run build` | Passed, 54 routes |
+| Web production build | `npm run build` | Passed, 56 routes |
 
 Not run in this environment: ZAP baseline, Bandit, `npm audit`, dependency CVE scan, Playwright e2e,
 load tests. These remain open items; see `docs/KNOWN_ISSUES.md`.

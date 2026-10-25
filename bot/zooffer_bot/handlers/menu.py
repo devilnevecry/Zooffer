@@ -171,7 +171,7 @@ async def cmd_buy(
 ) -> None:
     if not await _guard(message, user, state, config) or user is None:
         return
-    plans = await services.plan_views(db)
+    plans = [plan for plan in await services.plan_views(db) if plan.price_kopecks > 0]
     available = services.payments_available()
     await message.answer(
         texts.plans_text(bool(plans), available),
@@ -359,6 +359,8 @@ async def choose_plan(
         return
     await safe_callback_answer(callback)
     if callback.message is not None:
+        # Digital goods inside Telegram require Stars; the Stars flow is not
+        # implemented, so no external card link is offered here.
         await callback.message.answer(texts.plan_payment_unavailable_text())
 
 

@@ -4404,6 +4404,7 @@ button {
 .plan-card.featured {
   border-color: var(--brand-400);
   box-shadow: var(--shadow-card);
+  padding-top: 46px;
 }
 
 .plan-card h3 {
