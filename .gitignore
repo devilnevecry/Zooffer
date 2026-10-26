@@ -58,3 +58,11 @@ test-results/
 coverage/
 .trivy/
 gitleaks-report.json
+
+# AI / agent instruction files — hide from public repo (project made by me, not by AI)
+ZOOFFER_MASTER_PROMPT.md
+**/AGENTS.md
+CLAUDE.md
+.cursor/
+*prompt*.md
+**/*prompt*.md
