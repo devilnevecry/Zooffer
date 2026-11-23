@@ -9,6 +9,7 @@ description = "Zooffer backend — animal discovery and marketplace platform"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi==0.162.0",
+  "anyio>=4.6,<5",
   "uvicorn[standard]==0.34.0",
   "sqlalchemy[asyncio]==2.0.36",
   "alembic==1.14.0",

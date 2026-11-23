@@ -49,10 +49,32 @@ class Settings(BaseSettings):
     telegram_admin_chat_id: int = 0
     telegram_auth_max_age_seconds: int = 300
 
-    payment_provider: Literal["fake", "yookassa"] = "fake"
+    # Telegram Stars is the primary subscription path. Robokassa and YooKassa are
+    # optional website providers and are never offered inside Telegram.
+    payment_provider: Literal["fake", "yookassa", "robokassa", "telegram_stars"] = "fake"
     yookassa_shop_id: str = ""
     yookassa_secret_key: str = ""
     yookassa_return_url: str = "http://localhost:3000/account/subscription"
+
+    robokassa_merchant_login: str = ""
+    robokassa_password1: str = ""
+    robokassa_password2: str = ""
+    robokassa_is_test: bool = True
+    robokassa_hash_algo: Literal["md5", "sha256"] = "md5"
+
+    telegram_stars_enabled: bool = False
+    """Expose Telegram Stars purchase in the bot and Mini App.
+
+    Usually implied by ``PAYMENT_PROVIDER=telegram_stars`` but kept as a separate
+    switch so a deployment can beta-test Stars while another provider is selected
+    for the website.
+    """
+
+    email_auth_enabled: bool = False
+    """Email/password login. Always disabled in production for the Telegram-only launch.
+
+    Development and test keep the legacy endpoints so the existing suite can run.
+    """
 
     media_backend: Literal["local"] = "local"  # S3 adapter is not implemented (B9)
     media_local_path: str = "./data/media"
@@ -83,6 +105,13 @@ class Settings(BaseSettings):
         return self.environment in {"staging", "prod"}
 
     @property
+    def stars_enabled(self) -> bool:
+        """Telegram Stars are usable when enabled and a bot token exists."""
+        return (self.telegram_stars_enabled or self.payment_provider == "telegram_stars") and bool(
+            self.telegram_bot_token
+        )
+
+    @property
     def cookie_name(self) -> str:
         return "__Host-zooffer_session" if self.cookie_secure else "zooffer_session"
 
@@ -103,10 +132,23 @@ class Settings(BaseSettings):
             problems.append("COOKIE_SECURE must be true in production")
         if self.payment_provider == "fake":
             problems.append("PAYMENT_PROVIDER=fake is not allowed in production")
+        if self.payment_provider == "robokassa" and not (
+            self.robokassa_merchant_login and self.robokassa_password1 and self.robokassa_password2
+        ):
+            problems.append(
+                "ROBOKASSA_MERCHANT_LOGIN, ROBOKASSA_PASSWORD1 and ROBOKASSA_PASSWORD2 "
+                "are required for PAYMENT_PROVIDER=robokassa"
+            )
+        if self.payment_provider == "telegram_stars" and not self.telegram_bot_token:
+            problems.append("TELEGRAM_BOT_TOKEN is required for Telegram Stars")
         if self.enable_telegram and (
             not self.telegram_bot_token or not self.telegram_webhook_secret
         ):
             problems.append("TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET are required")
+        if self.cookie_secure and self.cookie_domain:
+            problems.append("COOKIE_DOMAIN must be empty when COOKIE_SECURE=true (__Host- cookies)")
+        if not self.metrics_token or self.metrics_token == "dev-metrics-token":
+            problems.append("METRICS_TOKEN must be a strong non-default value")
         if "zooffer_dev_password" in self.database_url:
             problems.append("DATABASE_URL uses the development password")
         if problems:

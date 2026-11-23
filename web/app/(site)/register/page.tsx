@@ -1,36 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { AuthShell } from "@/components/auth-shell";
-import { RegisterForm } from "@/components/register-form";
+import { TelegramAuth } from "@/components/telegram-auth";
 import { getMe } from "@/lib/api";
-import { getDictionaries } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Регистрация",
-  description: "Создайте аккаунт Zooffer: подбор животных, объявления и безопасная переписка.",
+  description: "Создайте аккаунт Zooffer через Telegram: подбор животных, объявления и переписка.",
   robots: { index: false, follow: false },
 };
 
 export default async function RegisterPage() {
   const me = await getMe();
   if (me) redirect("/account");
-  const dictionaries = await getDictionaries();
 
   return (
     <AuthShell
-      title="Создайте аккаунт"
-      subtitle="Это займёт минуту. Имя и фамилия видны другим, все контакты остаются приватными."
-      footer={
-        <>
-          Уже с нами? <Link href="/login">Войти</Link>
-        </>
-      }
+      title="Аккаунт через Telegram"
+      subtitle="Подтвердите вход в Telegram — профиль создастся автоматически. Имя видно другим, контакты остаются приватными."
     >
       <Suspense fallback={<div className="loading-line" />}>
-        <RegisterForm dictionaries={dictionaries} />
+        <TelegramAuth intent="register" />
       </Suspense>
     </AuthShell>
   );

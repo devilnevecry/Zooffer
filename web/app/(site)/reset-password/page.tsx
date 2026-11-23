@@ -1,29 +1,6 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import { AuthShell } from "@/components/auth-shell";
-import { ResetPasswordForm } from "@/components/reset-password-form";
-
-export const metadata: Metadata = {
-  title: "Новый пароль",
-  robots: { index: false, follow: false },
-};
-
+/** Password reset links are retired together with email/password accounts. */
 export default function ResetPasswordPage() {
-  return (
-    <AuthShell
-      title="Новый пароль"
-      subtitle="Придумайте пароль длиной не меньше 10 символов."
-      footer={
-        <>
-          Нужна помощь? <Link href="/support">Написать в поддержку</Link>
-        </>
-      }
-    >
-      <Suspense fallback={<div className="loading-line" />}>
-        <ResetPasswordForm />
-      </Suspense>
-    </AuthShell>
-  );
+  redirect("/login");
 }

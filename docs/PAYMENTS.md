@@ -1,7 +1,8 @@
 # Payments
 
-Status: fake provider `VERIFIED` end-to-end; YooKassa adapter `IMPLEMENTED-UNVERIFIED`; Telegram
-Stars `BLOCKED`; production payments `BLOCKED` until merchant credentials and fiscalisation exist.
+Status: fake provider `VERIFIED` end-to-end; Telegram Stars implemented (bot + Mini App invoice
+flow, pre-checkout validation, idempotent activation, refund); Robokassa adapter implemented against
+the documented redirect/signature API; YooKassa adapter `IMPLEMENTED-UNVERIFIED`.
 
 ## Architecture
 

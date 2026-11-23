@@ -30,6 +30,14 @@ class BillingOrderList(BaseModel):
     items: list[BillingOrderView]
 
 
+class StarsInvoiceView(BaseModel):
+    public_id: UUID
+    plan_code: str
+    stars_amount: int
+    invoice_url: str
+    expires_at: datetime | None = None
+
+
 class AdminPaymentEventView(BaseModel):
     provider_event_id: str
     event_type: str

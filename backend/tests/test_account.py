@@ -298,6 +298,7 @@ async def test_partner_inquiry_stores_encrypted_contact(client: AsyncClient, db)
     payload = {
         "company": "ООО Зоотовары",
         "contact_name": "Мария",
+        "telegram": "@zooffer_food",
         "email": " Partner@Example.COM ",
         "phone": "+7 999 000-00-00",
         "category": "food",
@@ -317,18 +318,28 @@ async def test_partner_inquiry_stores_encrypted_contact(client: AsyncClient, db)
 
     # The ORM decrypts EncryptedText columns, so inspect raw storage to prove encryption.
     raw = (
-        await db.execute(text("SELECT email_encrypted, phone_encrypted FROM partner_inquiries"))
+        await db.execute(
+            text(
+                "SELECT telegram_encrypted, email_encrypted, phone_encrypted FROM partner_inquiries"
+            )
+        )
     ).one()
-    assert "partner@example.com" not in raw.email_encrypted
+    assert "zooffer_food" not in raw.telegram_encrypted
     assert "+7 999 000-00-00" not in raw.phone_encrypted
-    assert decrypt_value(raw.email_encrypted) == "partner@example.com"
+    assert decrypt_value(raw.telegram_encrypted) == "@zooffer_food"
     assert decrypt_value(raw.phone_encrypted) == "+7 999 000-00-00"
 
-    invalid_email = await client.post(
+    invalid_telegram = await client.post(
         "/api/v1/public/partner-inquiries",
-        json={**payload, "email": "not-an-email"},
+        json={**payload, "telegram": "not-a-handle"},
     )
-    assert invalid_email.status_code == 422
+    assert invalid_telegram.status_code == 422
+    # E-mail is optional now; the launch is Telegram-only.
+    valid_without_email = await client.post(
+        "/api/v1/public/partner-inquiries",
+        json={**payload, "telegram": "@zooffer_food_alt", "email": None, "phone": None},
+    )
+    assert valid_without_email.status_code == 201
 
     invalid_category = await client.post(
         "/api/v1/public/partner-inquiries",
@@ -342,11 +353,16 @@ async def test_partner_inquiry_stores_encrypted_contact(client: AsyncClient, db)
     )
     assert missing_consent.status_code == 422
 
-    # Three inquiries per e-mail address per day.
-    for _ in range(2):
-        allowed = await client.post("/api/v1/public/partner-inquiries", json=payload)
-        assert allowed.status_code == 201, allowed.text
-    limited = await client.post("/api/v1/public/partner-inquiries", json=payload)
+    # Three inquiries per Telegram handle per day.
+    rate_handle = "@zooffer_food_rate"
+    rate_payload = {**payload, "telegram": rate_handle}
+    allowed = await client.post("/api/v1/public/partner-inquiries", json=rate_payload)
+    assert allowed.status_code == 201, allowed.text
+    allowed_again = await client.post("/api/v1/public/partner-inquiries", json=rate_payload)
+    assert allowed_again.status_code == 201, allowed_again.text
+    third_allowed = await client.post("/api/v1/public/partner-inquiries", json=rate_payload)
+    assert third_allowed.status_code == 201, third_allowed.text
+    limited = await client.post("/api/v1/public/partner-inquiries", json=rate_payload)
     assert limited.status_code == 429
     assert limited.json()["error"]["code"] == "rate_limited"
 

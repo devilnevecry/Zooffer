@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+import anyio
+import anyio.to_thread
 from PIL import Image, ImageOps
 
 from zooffer.config import settings
@@ -114,12 +116,17 @@ def _webp_bytes(image: Image.Image, quality: int = 82) -> bytes:
     return buffer.getvalue()
 
 
-async def process_and_store_image(content: bytes, *, prefix: str = "animals") -> ProcessedImage:
+def _process_bytes(content: bytes) -> tuple[Image.Image, bytes, bytes]:
+    """CPU-bound Pillow pipeline, run in a worker thread."""
     image = _validate_and_normalise(content)
     full = _fit(image, FULL_SIZE)
     thumb = _fit(image, THUMB_SIZE)
-    full_bytes = _webp_bytes(full)
-    thumb_bytes = _webp_bytes(thumb, quality=78)
+    return full, _webp_bytes(full), _webp_bytes(thumb, quality=78)
+
+
+async def process_and_store_image(content: bytes, *, prefix: str = "animals") -> ProcessedImage:
+    # Pillow decodes/encodes synchronously; keep the event loop responsive.
+    full, full_bytes, thumb_bytes = await anyio.to_thread.run_sync(_process_bytes, content)
     token = uuid.uuid4().hex
     base = f"{prefix}/{token[:2]}/{token}"
     full_key = f"{base}/full.webp"

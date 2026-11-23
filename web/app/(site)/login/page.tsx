@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { AuthShell } from "@/components/auth-shell";
-import { LoginForm } from "@/components/login-form";
+import { TelegramAuth } from "@/components/telegram-auth";
 import { getMe } from "@/lib/api";
 import { safeNext } from "@/lib/navigation";
 
 export const metadata: Metadata = {
   title: "Вход",
-  description: "Войдите в аккаунт Zooffer.",
+  description: "Войдите в Zooffer через Telegram.",
   robots: { index: false, follow: false },
 };
 
@@ -26,16 +25,11 @@ export default async function LoginPage({
 
   return (
     <AuthShell
-      title="С возвращением"
-      subtitle="Войдите, чтобы продолжить подбор, переписку и управление объявлениями."
-      footer={
-        <>
-          Ещё нет аккаунта? <Link href={`/register?next=${encodeURIComponent(next)}`}>Создать</Link>
-        </>
-      }
+      title="Вход через Telegram"
+      subtitle="Один аккаунт для сайта, бота и Mini App. Почта и пароль не нужны."
     >
       <Suspense fallback={<div className="loading-line" />}>
-        <LoginForm />
+        <TelegramAuth intent="login" />
       </Suspense>
     </AuthShell>
   );

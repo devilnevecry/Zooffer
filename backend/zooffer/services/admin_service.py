@@ -49,7 +49,7 @@ from zooffer.services.media import media_url, thumb_key_for
 
 SETTING_DEFAULTS: dict[str, Any] = {
     "free_daily_swipes": 20,
-    "support_email": "support@zooffer.ru",
+    "support_telegram": "@zooffer_support",
     "enable_telegram": False,
     "enable_glass": True,
 }

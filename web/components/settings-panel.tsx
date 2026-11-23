@@ -371,12 +371,11 @@ export function SettingsPanel({
             <span role="columnheader">Событие</span>
             <span role="columnheader">В приложении</span>
             <span role="columnheader">Telegram</span>
-            <span role="columnheader">E-mail</span>
           </div>
           {prefs.map((item) => (
             <div className="pref-row" role="row" key={item.category}>
               <span role="cell">{categoryLabels[item.category] ?? item.category}</span>
-              {(["in_app", "telegram", "email"] as const).map((channel) => (
+              {(["in_app", "telegram"] as const).map((channel) => (
                 <label className="switch" role="cell" key={channel}>
                   <input
                     type="checkbox"
@@ -391,8 +390,7 @@ export function SettingsPanel({
           ))}
         </div>
         <p className="field-hint">
-          E-mail доставляется только после настройки почтового провайдера. Тихие часы настраиваются
-          в боте и Mini App.
+          Уведомления приходят в приложение и в Telegram. Тихие часы настраиваются в боте и Mini App.
         </p>
         <button
           type="button"

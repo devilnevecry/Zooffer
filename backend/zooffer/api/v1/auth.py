@@ -14,7 +14,7 @@ from zooffer.api.deps import (
     require_user_csrf,
 )
 from zooffer.config import settings
-from zooffer.core.errors import UnauthorizedError
+from zooffer.core.errors import NotFoundError, UnauthorizedError
 from zooffer.core.logging import get_logger
 from zooffer.core.rate_limit import limiter
 from zooffer.core.security import hash_email
@@ -45,10 +45,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 logger = get_logger("zooffer.auth")
 
 
+def _require_email_auth() -> None:
+    """Production launch is Telegram-only; hide legacy email/password endpoints."""
+    if settings.is_production and not settings.email_auth_enabled:
+        raise NotFoundError("Способ входа недоступен", code="email_auth_disabled")
+
+
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(
     payload: RegisterRequest, request: Request, response: Response, db: DbSession
 ) -> AuthResponse:
+    _require_email_auth()
     ip_hash = request_ip_hash(request)
     await limiter.hit(f"register:{ip_hash}", limit=5, window_seconds=3600)
     user = await auth_service.create_user_with_password(
@@ -79,6 +86,7 @@ async def register(
 async def login(
     payload: LoginRequest, request: Request, response: Response, db: DbSession
 ) -> AuthResponse:
+    _require_email_auth()
     ip_hash = request_ip_hash(request)
     await limiter.hit(f"login:ip:{ip_hash}", limit=15, window_seconds=300)
     await limiter.hit(f"login:email:{hash_email(payload.email)}", limit=8, window_seconds=300)
@@ -162,6 +170,7 @@ async def create_link_token(
 async def password_reset_request(
     payload: PasswordResetRequest, request: Request, db: DbSession
 ) -> MessageResponse:
+    _require_email_auth()
     ip_hash = request_ip_hash(request)
     await limiter.hit(f"reset:{ip_hash}", limit=5, window_seconds=3600)
     await auth_service.request_password_reset(db, payload.email)
@@ -172,6 +181,7 @@ async def password_reset_request(
 
 @router.post("/password/reset/confirm", response_model=OkResponse)
 async def password_reset_confirm(payload: PasswordResetConfirm, db: DbSession) -> OkResponse:
+    _require_email_auth()
     await auth_service.reset_password(
         db, raw_token=payload.token, new_password=payload.new_password
     )
@@ -180,6 +190,7 @@ async def password_reset_confirm(payload: PasswordResetConfirm, db: DbSession) -
 
 @router.post("/email/verify", response_model=OkResponse)
 async def email_verify(payload: EmailVerifyRequest, db: DbSession) -> OkResponse:
+    _require_email_auth()
     await auth_service.verify_email(db, payload.token)
     return OkResponse()
 
@@ -188,6 +199,7 @@ async def email_verify(payload: EmailVerifyRequest, db: DbSession) -> OkResponse
 async def email_resend(
     auth: Annotated[auth_service.AuthContext, Depends(require_user_csrf)], db: DbSession
 ) -> MessageResponse:
+    _require_email_auth()
     if auth.user.email_verified_at is not None:
         return MessageResponse(message="Почта уже подтверждена")
     from zooffer.db.models import UserPrivateData

@@ -124,8 +124,8 @@ def create_webhook_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        if queue is not None:
-            await queue.stop()
+        # UpdateQueue starts its workers in the constructor. Stopping it before
+        # ``yield`` used to kill them immediately; only shut down on exit.
         yield
         if queue is not None:
             await queue.stop()

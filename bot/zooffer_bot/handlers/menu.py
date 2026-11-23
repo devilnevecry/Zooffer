@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, LabeledPrice, Message
 from sqlalchemy.ext.asyncio import AsyncSession
+from zooffer.core.errors import AppError
 from zooffer.db.models import User
 
 from .. import services, texts
@@ -161,6 +162,14 @@ async def cmd_subscription(
     )
 
 
+def _plan_label(plan) -> str:  # type: ignore[no-untyped-def]
+    if plan.stars_amount:
+        return f"{plan.name} · {plan.stars_amount} Stars / {plan.period_days} дн."
+    return f"{plan.name} · {plan.price_kopecks / 100:,.0f} ₽ / {plan.period_days} дн.".replace(
+        ",", " "
+    )
+
+
 @router.message(Command("buy"))
 async def cmd_buy(
     message: Message,
@@ -171,20 +180,15 @@ async def cmd_buy(
 ) -> None:
     if not await _guard(message, user, state, config) or user is None:
         return
-    plans = [plan for plan in await services.plan_views(db) if plan.price_kopecks > 0]
+    plans = [
+        plan
+        for plan in await services.plan_views(db)
+        if plan.price_kopecks > 0 and plan.stars_amount
+    ]
     available = services.payments_available()
     await message.answer(
         texts.plans_text(bool(plans), available),
-        reply_markup=plans_keyboard(
-            [
-                (
-                    plan.code,
-                    f"{plan.name} · {plan.price_kopecks / 100:,.0f} ₽ / "
-                    f"{plan.period_days} дн.".replace(",", " "),
-                )
-                for plan in plans
-            ]
-        )
+        reply_markup=plans_keyboard([(plan.code, _plan_label(plan)) for plan in plans])
         if plans and available
         else main_menu(config.mini_app_url),
     )
@@ -269,11 +273,15 @@ async def menu_callbacks(
         return
     if action == "buy":
         await safe_callback_answer(callback)
-        plans = await services.plan_views(db)
+        plans = [
+            plan
+            for plan in await services.plan_views(db)
+            if plan.price_kopecks > 0 and plan.stars_amount
+        ]
         available = services.payments_available()
         await callback.message.answer(
             texts.plans_text(bool(plans), available),
-            reply_markup=plans_keyboard([(plan.code, plan.name) for plan in plans])
+            reply_markup=plans_keyboard([(plan.code, _plan_label(plan)) for plan in plans])
             if plans and available
             else main_menu(config.mini_app_url),
         )
@@ -344,7 +352,9 @@ async def toggle_notifications(
 @router.callback_query(F.data.startswith(prefix("buy:")))
 async def choose_plan(
     callback: CallbackQuery,
+    db: AsyncSession,
     user: User | None,
+    bot: Bot,
 ) -> None:
     parts = unpack(callback.data, 3)
     if parts is None or parts[0] != "buy":
@@ -353,11 +363,31 @@ async def choose_plan(
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
-    await safe_callback_answer(callback)
-    if callback.message is not None:
-        # Digital goods inside Telegram require Stars; the Stars flow is not
-        # implemented, so no external card link is offered here.
+    if callback.message is None:
+        await safe_callback_answer(callback)
+        return
+    if not services.payments_available():
+        await safe_callback_answer(callback)
         await callback.message.answer(texts.plan_payment_unavailable_text())
+        return
+    try:
+        order, plan = await services.prepare_stars_order(db, user, parts[2])
+    except AppError as exc:
+        await safe_callback_answer(callback, exc.message, show_alert=True)
+        return
+    await safe_callback_answer(callback)
+    if not order.stars_amount:
+        await callback.message.answer(texts.plan_payment_unavailable_text())
+        return
+    await bot.send_invoice(
+        chat_id=callback.message.chat.id,
+        title=f"Zooffer {plan.name}",
+        description=plan.description[:255],
+        payload=f"stars:{order.id}",
+        provider_token="",
+        currency="XTR",
+        prices=[LabeledPrice(label=plan.name[:32], amount=order.stars_amount)],
+    )
 
 
 @router.message(F.text == "Меню")

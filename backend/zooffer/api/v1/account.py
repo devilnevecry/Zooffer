@@ -232,7 +232,7 @@ async def list_partner_offers(db: DbSession) -> PartnerOfferList:
 @public_router.post("/partner-inquiries", status_code=201)
 async def create_partner_inquiry(payload: PartnerInquiryRequest, db: DbSession) -> dict[str, bool]:
     await limiter.hit(
-        f"partner-inquiry:{payload.email.strip().lower()}", limit=3, window_seconds=86_400
+        f"partner-inquiry:{payload.telegram.strip().lower()}", limit=3, window_seconds=86_400
     )
     now = utcnow()
     db.add(
@@ -240,7 +240,8 @@ async def create_partner_inquiry(payload: PartnerInquiryRequest, db: DbSession) 
             id=uuid4(),
             company=payload.company,
             contact_name=payload.contact_name,
-            email_encrypted=encrypt_value(payload.email.strip().lower()),
+            telegram_encrypted=encrypt_value(payload.telegram.strip()),
+            email_encrypted=encrypt_value(payload.email.strip().lower()) if payload.email else None,
             phone_encrypted=encrypt_value(payload.phone) if payload.phone else None,
             category=payload.category,
             message=payload.message,

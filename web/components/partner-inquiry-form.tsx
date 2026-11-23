@@ -21,8 +21,7 @@ export function PartnerInquiryForm() {
   const [form, setForm] = useState({
     company: "",
     contactName: "",
-    email: "",
-    phone: "",
+    telegram: "",
     category: "food",
     message: "",
     consent: false,
@@ -44,8 +43,7 @@ export function PartnerInquiryForm() {
         body: {
           company: form.company.trim(),
           contact_name: form.contactName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim() || null,
+          telegram: form.telegram.trim(),
           category: form.category,
           message: form.message.trim(),
           consent: form.consent,
@@ -69,8 +67,8 @@ export function PartnerInquiryForm() {
         <CheckIcon width={40} height={40} />
         <h2>Заявка получена</h2>
         <p>
-          Мы ответим на указанный e-mail. Отправляя заявку, вы соглашаетесь на обработку данных для
-          рассмотрения сотрудничества.
+          Мы ответим в Telegram на указанный контакт. Отправляя заявку, вы соглашаетесь на обработку
+          данных для рассмотрения сотрудничества.
         </p>
       </div>
     );
@@ -104,30 +102,18 @@ export function PartnerInquiryForm() {
           />
         </div>
       </div>
-      <div className="field-row">
-        <div className="field">
-          <label htmlFor="partner-email">E-mail *</label>
-          <input
-            id="partner-email"
-            className="input"
-            type="email"
-            value={form.email}
-            onChange={(event) => update("email", event.target.value)}
-            maxLength={200}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="partner-phone">Телефон</label>
-          <input
-            id="partner-phone"
-            className="input"
-            type="tel"
-            value={form.phone}
-            onChange={(event) => update("phone", event.target.value)}
-            maxLength={40}
-          />
-        </div>
+      <div className="field">
+        <label htmlFor="partner-telegram">Telegram для связи *</label>
+        <input
+          id="partner-telegram"
+          className="input"
+          value={form.telegram}
+          onChange={(event) => update("telegram", event.target.value)}
+          placeholder="@username или https://t.me/username"
+          maxLength={64}
+          required
+        />
+        <p className="field-hint">Почта и телефон не запрашиваются — вся связь идёт в Telegram.</p>
       </div>
       <div className="field">
         <label htmlFor="partner-category">Категория *</label>

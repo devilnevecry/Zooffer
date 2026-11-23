@@ -1,0 +1,99 @@
+name: zooffer-prod-pc
+
+services:
+  db:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zooffer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-zooffer}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init-databases.sh:/docker-entrypoint-initdb.d/10-init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zooffer} -d ${POSTGRES_DB:-zooffer}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-zooffer_redis_password}"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-zooffer_redis_password} ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    image: zooffer/backend:latest
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: prod
+      APP_BASE_URL: ${APP_BASE_URL}
+      API_BASE_URL: ${API_BASE_URL}
+      PUBLIC_API_URL: ${PUBLIC_API_URL}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zooffer}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-zooffer}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-zooffer_redis_password}@redis:6379/0
+      SESSION_SECRET: ${SESSION_SECRET}
+      SECRET_PEPPER: ${SECRET_PEPPER}
+      COOKIE_SECURE: "true"
+      COOKIE_DOMAIN: ""
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
+      TELEGRAM_STARS_ENABLED: ${TELEGRAM_STARS_ENABLED:-true}
+      ENABLE_TELEGRAM: "true"
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      MEDIA_BACKEND: local
+      MEDIA_LOCAL_PATH: /data/media
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
+      LOG_LEVEL: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["uvicorn", "zooffer.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  bot:
+    image: zooffer/backend:latest
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: prod
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
+      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID}
+      BOT_MODE: polling
+      BOT_PUBLIC_URL: ${APP_BASE_URL}
+      BOT_WEBHOOK_PATH: /telegram/webhook
+      BOT_WEBHOOK_HOST: 0.0.0.0
+      BOT_WEBHOOK_PORT: "8081"
+      BOT_UPDATE_QUEUE: inline
+      BOT_UPDATE_WORKERS: "1"
+      BOT_FSM_TTL_SECONDS: "3600"
+      BOT_THROTTLE_LIMIT: "25"
+      BOT_THROTTLE_WINDOW: "10"
+      BOT_GLOBAL_THROTTLE_LIMIT: "200"
+      BOT_GLOBAL_THROTTLE_WINDOW: "10"
+      BOT_NOTIFICATION_WORKER: "true"
+      BOT_NOTIFICATION_INTERVAL: "15"
+      BOT_NOTIFICATION_BATCH: "20"
+      BOT_NOTIFICATION_MAX_AGE_HOURS: "24"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zooffer}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-zooffer}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-zooffer_redis_password}@redis:6379/0
+      SECRET_PEPPER: ${SECRET_PEPPER}
+      MEDIA_LOCAL_PATH: /data/media
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:

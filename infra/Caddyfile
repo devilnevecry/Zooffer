@@ -1,0 +1,31 @@
+{
+    email {$ZOOFFER_EMAIL}
+}
+
+{$ZOOFFER_APP_DOMAIN} {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        -Server
+        -X-Powered-By
+    }
+
+    handle /api/* {
+        reverse_proxy {$ZOOFFER_BACKEND_UPSTREAM}
+    }
+
+    handle /media/* {
+        reverse_proxy {$ZOOFFER_BACKEND_UPSTREAM}
+    }
+
+    handle /telegram/* {
+        reverse_proxy {$ZOOFFER_BACKEND_UPSTREAM_BOT}
+    }
+
+    handle {
+        reverse_proxy {$ZOOFFER_WEB_UPSTREAM}
+    }
+}

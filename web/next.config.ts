@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${apiInternal}/api/:path*`,
       },
+      {
+        // Media is served by FastAPI, not by Next. Without this rewrite every
+        // photo URL breaks when the site and API run on different hosts.
+        source: "/media/:path*",
+        destination: `${apiInternal}/media/:path*`,
+      },
     ];
   },
 };

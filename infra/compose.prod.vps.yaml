@@ -1,0 +1,48 @@
+name: zooffer-prod-vps
+
+services:
+  web:
+    image: zooffer/web:latest
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: prod
+      APP_BASE_URL: https://${ZOOFFER_DOMAIN}
+      API_BASE_URL: https://${ZOOFFER_DOMAIN}
+      PUBLIC_API_URL: https://${ZOOFFER_DOMAIN}
+      NEXT_PUBLIC_APP_URL: https://${ZOOFFER_DOMAIN}
+      NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+      NEXT_PUBLIC_TELEGRAM_BOT_URL: ${NEXT_PUBLIC_TELEGRAM_BOT_URL}
+      NEXT_PUBLIC_TELEGRAM_MINI_APP_URL: ${NEXT_PUBLIC_TELEGRAM_MINI_APP_URL}
+      NEXT_PUBLIC_TELEGRAM_CHANNEL_URL: ${NEXT_PUBLIC_TELEGRAM_CHANNEL_URL}
+      API_INTERNAL_URL: http://${ZOOFFER_BACKEND_UPSTREAM}
+      MEDIA_PUBLIC_BASE_URL: https://${ZOOFFER_DOMAIN}
+      COOKIE_SECURE: "true"
+      COOKIE_DOMAIN: ""
+      SESSION_SECRET: ${SESSION_SECRET}
+      SECRET_PEPPER: ${SECRET_PEPPER}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
+      TELEGRAM_STARS_ENABLED: ${TELEGRAM_STARS_ENABLED:-true}
+      ENABLE_TELEGRAM: "true"
+    depends_on:
+      - caddy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ZOOFFER_APP_DOMAIN: ${ZOOFFER_DOMAIN}
+      ZOOFER_EMAIL: ${ZOOFER_EMAIL}
+      ZOOFER_BACKEND_UPSTREAM: ${ZOOFER_BACKEND_UPSTREAM}
+      ZOOFER_BACKEND_UPSTREAM_BOT: ${ZOOFER_BACKEND_UPSTREAM_BOT}
+      ZOOFER_WEB_UPSTREAM: ${ZOOFER_WEB_UPSTREAM}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

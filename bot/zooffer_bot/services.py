@@ -15,6 +15,7 @@ from zooffer.db.models import (
     City,
     Listing,
     NotificationPreference,
+    PaymentOrder,
     Plan,
     Profile,
     Referral,
@@ -270,13 +271,41 @@ async def mark_sold(db: AsyncSession, user: User, public_id: UUID) -> Listing:
 
 
 def payments_available() -> bool:
-    """Telegram Stars purchase flow is not implemented yet.
+    """Digital goods inside Telegram are sold only through Telegram Stars."""
+    return billing_service.stars_payments_available()
 
-    Digital goods inside Telegram must use Stars; a card-link flow would violate
-    current Telegram policy and is therefore never offered here. The website and
-    Mini App billing endpoints remain separate until Stars is implemented (B5).
-    """
-    return False
+
+async def prepare_stars_order(
+    db: AsyncSession, user: User, plan_code: str
+) -> tuple[PaymentOrder, Plan]:
+    return await billing_service.prepare_stars_order(db, user, plan_code)
+
+
+async def confirm_stars_payment(
+    db: AsyncSession,
+    *,
+    payload: str,
+    charge_id: str,
+    telegram_user_id: int | str,
+    total_amount: int,
+    currency: str = "XTR",
+) -> PaymentOrder:
+    return await billing_service.confirm_stars_payment(
+        db,
+        payload=payload,
+        charge_id=charge_id,
+        telegram_user_id=telegram_user_id,
+        total_amount=total_amount,
+        currency=currency,
+    )
+
+
+async def validate_stars_precheckout(
+    db: AsyncSession, *, payload: str, total_amount: int
+) -> PaymentOrder:
+    return await billing_service.validate_stars_precheckout(
+        db, payload=payload, total_amount=total_amount
+    )
 
 
 async def plan_views(db: AsyncSession) -> list[PlanView]:

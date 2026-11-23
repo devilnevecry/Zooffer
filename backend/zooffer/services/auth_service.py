@@ -379,7 +379,7 @@ async def authenticate_telegram_login(db: AsyncSession, payload: dict[str, objec
         if user is None or user.status != UserStatus.ACTIVE:
             raise ForbiddenError("Аккаунт недоступен", code="account_inactive")
         return user
-    return await _create_telegram_user(db, telegram_id)
+    return await _create_telegram_user(db, telegram_id, channel="telegram_login")
 
 
 async def authenticate_telegram_init_data(db: AsyncSession, init_data: str) -> User:
@@ -401,10 +401,12 @@ async def authenticate_telegram_init_data(db: AsyncSession, init_data: str) -> U
         if user is None or user.status != UserStatus.ACTIVE:
             raise ForbiddenError("Аккаунт недоступен", code="account_inactive")
         return user
-    return await _create_telegram_user(db, telegram_id)
+    return await _create_telegram_user(db, telegram_id, channel="telegram_miniapp")
 
 
-async def _create_telegram_user(db: AsyncSession, telegram_id: str) -> User:
+async def _create_telegram_user(
+    db: AsyncSession, telegram_id: str, *, channel: str = "telegram"
+) -> User:
     user = User(public_id=uuid4(), status=UserStatus.ACTIVE, role=UserRole.USER)
     db.add(user)
     await db.flush()
@@ -416,6 +418,24 @@ async def _create_telegram_user(db: AsyncSession, telegram_id: str) -> User:
             user_id=user.id,
             provider=AuthProvider.TELEGRAM,
             provider_user_id=telegram_id,
+        )
+    )
+    # Telegram sign-in is an implicit acceptance of the published terms and
+    # privacy policy; record it exactly like the bot-first onboarding does.
+    db.add(
+        Consent(
+            user_id=user.id,
+            document="terms",
+            version=TERMS_VERSION,
+            channel=channel,
+        )
+    )
+    db.add(
+        Consent(
+            user_id=user.id,
+            document="privacy",
+            version=PRIVACY_VERSION,
+            channel=channel,
         )
     )
     try:
@@ -572,7 +592,7 @@ async def request_password_reset(db: AsyncSession, email: str) -> None:
         subject="Zooffer — восстановление пароля",
         body=(
             "Чтобы задать новый пароль, откройте ссылку (действует 1 час):\n"
-            f"{settings.app_base_url}/auth/reset-password?token={raw}\n\n"
+            f"{settings.app_base_url}/reset-password?token={raw}\n\n"
             "Если вы не запрашивали восстановление, просто проигнорируйте письмо."
         ),
     )
@@ -621,7 +641,7 @@ async def issue_email_verification(db: AsyncSession, user: User, email: str) -> 
         subject="Zooffer — подтвердите почту",
         body=(
             "Подтвердите адрес электронной почты (ссылка действует 2 дня):\n"
-            f"{settings.app_base_url}/auth/verify-email?token={raw}"
+            f"{settings.app_base_url}/verify-email?token={raw}"
         ),
     )
 

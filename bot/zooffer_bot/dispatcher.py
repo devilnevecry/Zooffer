@@ -110,7 +110,7 @@ def build_dispatcher(config: BotConfig, *, storage: BaseStorage | None = None) -
     dp = Dispatcher(storage=storage or _build_storage(config), config=config)
     dp.errors.register(_on_error)
 
-    for observer in (dp.message, dp.callback_query):
+    for observer in (dp.message, dp.callback_query, dp.pre_checkout_query):
         observer.outer_middleware(DatabaseMiddleware())
         observer.outer_middleware(BotUserMiddleware())
         observer.outer_middleware(ThrottleMiddleware(config))

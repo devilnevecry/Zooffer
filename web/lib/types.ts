@@ -374,6 +374,24 @@ export interface BillingOrder {
   paid_at: string | null;
 }
 
+export interface StarsInvoice {
+  public_id: string;
+  plan_code: string;
+  stars_amount: number;
+  invoice_url: string;
+  expires_at: string | null;
+}
+
+export interface TelegramLoginPayload {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
 export interface SessionView {
   id: string;
   device_label: string | null;

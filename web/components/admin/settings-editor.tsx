@@ -12,9 +12,9 @@ const labels: Record<string, { title: string; hint: string }> = {
     title: "Бесплатные свайпы в день",
     hint: "Общий лимит для сайта, бота и Mini App. Целое число от 0 до 1000.",
   },
-  support_email: {
-    title: "E-mail поддержки",
-    hint: "Показывается в юридических документах и письмах.",
+  support_telegram: {
+    title: "Telegram поддержки",
+    hint: "Username или ссылка t.me/… Показывается в юридических документах и на странице поддержки.",
   },
   enable_telegram: {
     title: "Telegram-канал",

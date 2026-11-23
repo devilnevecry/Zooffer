@@ -26,18 +26,29 @@ export function SubscriptionManager({
   legalPath = "/legal/offer",
   checkoutPath = "/account/subscription/checkout",
   unavailableNote,
+  telegramUrl,
+  onStarsInvoice,
 }: {
   initial: SubscriptionState;
   plans: Plan[];
   legalPath?: string;
   checkoutPath?: string;
   unavailableNote?: string;
+  /** Bot deep link used by the website: Stars can only be paid inside Telegram. */
+  telegramUrl?: string;
+  /** Mini App hook that opens a Telegram Stars invoice. */
+  onStarsInvoice?: (planCode: string) => Promise<void>;
 }) {
   const showToast = useToast();
   const router = useRouter();
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+
+  const starsProvider = state.payment_provider === "telegram_stars";
+  const purchaseMode = starsProvider ? (onStarsInvoice ? "stars" : "telegram") : "provider";
+  const botUrl =
+    telegramUrl ?? process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? "https://t.me/";
 
   const cancel = async () => {
     if (
@@ -63,8 +74,18 @@ export function SubscriptionManager({
   };
 
   const startCheckout = async (planCode: string) => {
+    if (purchaseMode === "telegram") {
+      // Digital goods cannot be sold by an external card link inside Telegram,
+      // and the website cannot charge Stars: hand the user over to the bot.
+      window.open(`${botUrl}?start=buy_${planCode}`, "_blank", "noopener,noreferrer");
+      return;
+    }
     setPaying(planCode);
     try {
+      if (purchaseMode === "stars" && onStarsInvoice) {
+        await onStarsInvoice(planCode);
+        return;
+      }
       const order = await api<BillingOrder>("/api/v1/billing/orders", {
         method: "POST",
         body: { plan_code: planCode },
@@ -76,6 +97,7 @@ export function SubscriptionManager({
       router.push(`${checkoutPath}?order=${order.public_id}`);
     } catch (err) {
       showToast(err instanceof ClientApiError ? err.message : "Не удалось создать платёж", "error");
+    } finally {
       setPaying(null);
     }
   };
@@ -117,7 +139,17 @@ export function SubscriptionManager({
           <ShieldIcon width={18} height={18} />
           <span>
             {unavailableNote ??
-              "Онлайн-оплата пока недоступна: не настроены платёжные реквизиты. Цены ниже — демонстрационные и будут изменены до запуска. Оформить платный план сейчас нельзя, списаний не происходит."}
+              "Онлайн-оплата пока недоступна: не настроены платёжные реквизиты. Оформить платный план сейчас нельзя, списаний не происходит."}
+          </span>
+        </div>
+      )}
+
+      {starsProvider && purchaseMode === "telegram" && (
+        <div className="notice">
+          <ShieldIcon width={18} height={18} />
+          <span>
+            Подписка оплачивается в Telegram Stars. На сайте оплата картой не принимается —
+            кнопка открывает бота, где счёт оплачивается звёздами.
           </span>
         </div>
       )}
@@ -137,7 +169,11 @@ export function SubscriptionManager({
           <div>
             <span className="eyebrow">Тарифы</span>
             <h2>Больше возможностей</h2>
-            <p>Все цены указаны в рублях. Условия и правила отмены — в оферте.</p>
+            <p>
+              {starsProvider
+                ? "Оплата в Telegram Stars. Условия и правила отмены — в оферте."
+                : "Все цены указаны в рублях. Условия и правила отмены — в оферте."}
+            </p>
           </div>
         </div>
         <div className="plan-grid">
@@ -172,10 +208,18 @@ export function SubscriptionManager({
                 <article className="plan-card featured" key={plan.code}>
                   {plan.is_placeholder_price && <span className="plan-flag">Цена до запуска</span>}
                   <h3>{plan.name}</h3>
-                  <p className="plan-price">{formatPrice(plan.price_kopecks)}</p>
+                  <p className="plan-price">
+                    {starsProvider && plan.stars_amount
+                      ? `${plan.stars_amount} ★`
+                      : formatPrice(plan.price_kopecks)}
+                  </p>
                   <p className="muted">
                     за {plan.period_days} дней
-                    {plan.stars_amount ? ` · ${plan.stars_amount} Stars` : ""}
+                    {starsProvider && plan.stars_amount
+                      ? " · оплата Telegram Stars"
+                      : plan.stars_amount
+                        ? ` · ${plan.stars_amount} Stars`
+                        : ""}
                   </p>
                   <p>{plan.description}</p>
                   <ul className="plan-list">
@@ -194,12 +238,16 @@ export function SubscriptionManager({
                     {current
                       ? "Подключено"
                       : paying === plan.code
-                        ? "Создаём платёж…"
-                        : state.payments_available
-                          ? state.payments_demo
-                            ? "Демо-оплата"
-                            : "Перейти к оплате"
-                          : "Оплата недоступна"}
+                        ? "Создаём счёт…"
+                        : !state.payments_available
+                          ? "Оплата недоступна"
+                          : purchaseMode === "telegram"
+                            ? "Оплатить в Telegram"
+                            : purchaseMode === "stars"
+                              ? `Оплатить ${plan.stars_amount ?? ""} ★`
+                              : state.payments_demo
+                                ? "Демо-оплата"
+                                : "Перейти к оплате"}
                   </button>
                 </article>
               );
@@ -220,8 +268,9 @@ export function SubscriptionManager({
             Отменить подписку можно в этом разделе — доступ сохранится до конца оплаченного периода.
           </p>
           <p>
-            Платёжные данные вводятся только на стороне платёжного провайдера. Zooffer не хранит
-            номера карт. Чеки и возвраты регулируются офертой и законодательством РФ.
+            {starsProvider
+              ? "Оплата проходит внутри Telegram через Stars. Zooffer не получает данные карты и не хранит платёжные реквизиты. Возврат Stars оформляется через поддержку."
+              : "Платёжные данные вводятся только на стороне платёжного провайдера. Zooffer не хранит номера карт. Чеки и возвраты регулируются офертой и законодательством РФ."}
           </p>
           <Link href={legalPath} className="text-link">
             Условия подписки и возврата

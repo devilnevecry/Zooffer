@@ -98,7 +98,9 @@ class PartnerInquiry(Base, UUIDPrimaryKey):
 
     company: Mapped[str] = mapped_column(String(160), nullable=False)
     contact_name: Mapped[str] = mapped_column(String(120), nullable=False)
-    email_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
+    # Telegram is the contact channel; e-mail/phone are legacy optional fields.
+    telegram_encrypted: Mapped[str | None] = mapped_column(Text)
+    email_encrypted: Mapped[str | None] = mapped_column(Text)
     phone_encrypted: Mapped[str | None] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(24), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)

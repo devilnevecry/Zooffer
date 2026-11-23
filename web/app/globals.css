@@ -3343,6 +3343,22 @@ button {
   margin-top: 4px;
 }
 
+.telegram-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.telegram-widget {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.telegram-auth .text-link {
+  align-self: center;
+}
+
 .form-row-between {
   display: flex;
   align-items: center;
@@ -4219,7 +4235,7 @@ button {
 
 .pref-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(3, 64px);
+  grid-template-columns: minmax(0, 1fr) repeat(2, 64px);
   gap: 8px;
   align-items: center;
   padding: 10px 12px;
@@ -5068,8 +5084,8 @@ button {
   }
 
   .pref-row {
-    grid-template-columns: minmax(130px, 1fr) repeat(3, 52px);
-    min-width: 340px;
+    grid-template-columns: minmax(130px, 1fr) repeat(2, 52px);
+    min-width: 280px;
     padding-inline: 10px;
   }
 
@@ -6345,7 +6361,7 @@ button {
 }
 
 .tg-app .pref-row {
-  grid-template-columns: minmax(0, 1fr) repeat(3, 46px);
+  grid-template-columns: minmax(0, 1fr) repeat(2, 46px);
   padding-inline: 10px;
 }
 

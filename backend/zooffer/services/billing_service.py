@@ -29,12 +29,14 @@ from zooffer.schemas.billing import (
     AdminPaymentDetailView,
     AdminPaymentEventView,
     BillingOrderView,
+    StarsInvoiceView,
 )
 from zooffer.services import notification_service, quota_service
 from zooffer.services.entitlements import get_entitlements
 from zooffer.services.payments import (
     FakePaymentProvider,
     PaymentProviderNotConfigured,
+    TelegramStarsProvider,
     VerifiedEvent,
     get_payment_provider,
 )
@@ -50,6 +52,16 @@ def payment_mode() -> str:
         return (
             "live" if settings.yookassa_shop_id and settings.yookassa_secret_key else "unavailable"
         )
+    if settings.payment_provider == "robokassa":
+        return (
+            "live"
+            if settings.robokassa_merchant_login
+            and settings.robokassa_password1
+            and settings.robokassa_password2
+            else "unavailable"
+        )
+    if settings.payment_provider == "telegram_stars":
+        return "stars" if settings.stars_enabled else "unavailable"
     if settings.payment_provider == "fake" and settings.environment in {"dev", "test"}:
         return "demo"
     return "unavailable"
@@ -61,6 +73,10 @@ def payments_available() -> bool:
 
 def payments_demo() -> bool:
     return payment_mode() == "demo"
+
+
+def stars_payments_available() -> bool:
+    return settings.stars_enabled and payment_mode() in {"stars", "live", "demo"}
 
 
 def _plan_query():  # type: ignore[no-untyped-def]
@@ -86,6 +102,11 @@ async def create_order(db: AsyncSession, user: User, plan_code: str) -> BillingO
         raise ValidationAppError(
             "Онлайн-оплата пока недоступна. Попробуйте позже или напишите в поддержку.",
             code="payments_unavailable",
+        )
+    if settings.payment_provider == "telegram_stars":
+        raise ValidationAppError(
+            "Подписка оформляется в Telegram: откройте бота или Mini App.",
+            code="use_telegram",
         )
     plan = await _plan(db, plan_code)
     if plan.price_kopecks <= 0:
@@ -163,6 +184,229 @@ async def create_order(db: AsyncSession, user: User, plan_code: str) -> BillingO
     await db.commit()
     await db.refresh(order)
     return await order_view(db, order)
+
+
+def stars_invoice_payload(order: PaymentOrder) -> str:
+    return f"stars:{order.id}"
+
+
+async def _stars_plan(db: AsyncSession, plan_code: str) -> Plan:
+    plan = await _plan(db, plan_code)
+    if plan.price_kopecks <= 0:
+        raise ValidationAppError("Этот тариф не требует оплаты", code="free_plan_not_purchasable")
+    if not plan.stars_amount or plan.stars_amount <= 0:
+        raise ValidationAppError(
+            "Для тарифа не задана цена в Telegram Stars. Напишите в поддержку.",
+            code="stars_price_missing",
+        )
+    if settings.is_production and plan.is_placeholder_price:
+        raise ValidationAppError(
+            "Цена тарифа ещё не утверждена. Оплата временно недоступна.",
+            code="placeholder_price",
+        )
+    if not settings.stars_enabled:
+        raise ValidationAppError(
+            "Оплата в Telegram Stars пока недоступна.", code="stars_unavailable"
+        )
+    return plan
+
+
+async def prepare_stars_order(
+    db: AsyncSession, user: User, plan_code: str
+) -> tuple[PaymentOrder, Plan]:
+    """Create (or reuse) a pending Stars order. The invoice is sent separately.
+
+    The bot sends the invoice with ``sendInvoice`` and the Mini App asks the backend
+    for a ``createInvoiceLink`` URL. Both share this order so activation is
+    idempotent and tied to one ``telegram_payment_charge_id``.
+    """
+    plan = await _stars_plan(db, plan_code)
+    now = utcnow()
+    recent = await db.scalar(
+        select(PaymentOrder)
+        .where(
+            PaymentOrder.user_id == user.id,
+            PaymentOrder.plan_id == plan.id,
+            PaymentOrder.provider == "telegram_stars",
+            PaymentOrder.status.in_(["created", "pending"]),
+            PaymentOrder.created_at >= now - timedelta(minutes=REUSE_ORDER_MINUTES),
+            PaymentOrder.expires_at.is_(None) | (PaymentOrder.expires_at > now),
+        )
+        .order_by(PaymentOrder.created_at.desc())
+        .limit(1)
+    )
+    if recent is not None:
+        return recent, plan
+    order = PaymentOrder(
+        id=uuid4(),
+        user_id=user.id,
+        plan_id=plan.id,
+        provider="telegram_stars",
+        provider_payment_id=None,
+        idempotency_key=f"stars:{uuid4()}",
+        amount_kopecks=plan.stars_amount,
+        currency="XTR",
+        stars_amount=plan.stars_amount,
+        status="pending",
+        expires_at=now + timedelta(minutes=ORDER_TTL_MINUTES),
+        raw_metadata={"plan_code": plan.code},
+    )
+    db.add(order)
+    await db.commit()
+    await db.refresh(order)
+    return order, plan
+
+
+async def create_stars_invoice(db: AsyncSession, user: User, plan_code: str) -> StarsInvoiceView:
+    order, plan = await prepare_stars_order(db, user, plan_code)
+    if order.confirmation_url:
+        return StarsInvoiceView(
+            public_id=order.id,
+            plan_code=plan.code,
+            stars_amount=order.stars_amount or 0,
+            invoice_url=order.confirmation_url,
+            expires_at=order.expires_at,
+        )
+    provider = get_payment_provider("telegram_stars")
+    if not isinstance(provider, TelegramStarsProvider):
+        raise ValidationAppError(
+            "Оплата в Telegram Stars пока недоступна.", code="stars_unavailable"
+        )
+    try:
+        invoice_url = await provider.create_invoice_link(
+            title=f"Zooffer {plan.name}",
+            description=plan.description,
+            payload=stars_invoice_payload(order),
+            stars_amount=order.stars_amount or 0,
+        )
+    except PaymentProviderNotConfigured as exc:
+        raise ValidationAppError(
+            "Оплата в Telegram Stars пока недоступна.", code="stars_unavailable"
+        ) from exc
+    order.confirmation_url = invoice_url[:500]
+    order.raw_metadata = {
+        **(order.raw_metadata or {}),
+        "invoice_url": invoice_url,
+        "plan_code": plan.code,
+    }
+    await db.commit()
+    await db.refresh(order)
+    return StarsInvoiceView(
+        public_id=order.id,
+        plan_code=plan.code,
+        stars_amount=order.stars_amount or 0,
+        invoice_url=invoice_url,
+        expires_at=order.expires_at,
+    )
+
+
+def parse_stars_payload(payload: str) -> UUID | None:
+    value = (payload or "").strip()
+    if not value.startswith("stars:"):
+        return None
+    try:
+        return UUID(value.split(":", 1)[1])
+    except (ValueError, IndexError):
+        return None
+
+
+async def validate_stars_precheckout(
+    db: AsyncSession, *, payload: str, total_amount: int
+) -> PaymentOrder:
+    """Validate a pre-checkout query before Telegram charges the user."""
+    order_id = parse_stars_payload(payload)
+    if order_id is None:
+        raise ValidationAppError("Некорректный счёт", code="stars_invalid_payload")
+    order = await db.get(PaymentOrder, order_id)
+    if order is None or order.provider != "telegram_stars":
+        raise ValidationAppError("Счёт не найден", code="stars_order_not_found")
+    if order.status not in {"created", "pending"}:
+        raise ValidationAppError("Счёт уже оплачен или отменён", code="stars_order_closed")
+    if order.expires_at is not None and order.expires_at < utcnow():
+        raise ValidationAppError("Счёт истёк. Создайте новый.", code="stars_order_expired")
+    if order.stars_amount is None or total_amount != order.stars_amount:
+        raise ValidationAppError("Сумма счёта не совпадает", code="stars_amount_mismatch")
+    return order
+
+
+async def confirm_stars_payment(
+    db: AsyncSession,
+    *,
+    payload: str,
+    charge_id: str,
+    telegram_user_id: int | str,
+    total_amount: int,
+    currency: str = "XTR",
+) -> PaymentOrder:
+    """Idempotently activate a subscription after ``successful_payment``."""
+    order_id = parse_stars_payload(payload)
+    if order_id is None:
+        raise ValidationAppError("Некорректный счёт", code="stars_invalid_payload")
+    order = await db.scalar(
+        select(PaymentOrder).where(PaymentOrder.id == order_id).with_for_update()
+    )
+    if order is None or order.provider != "telegram_stars":
+        raise ValidationAppError("Счёт не найден", code="stars_order_not_found")
+    if order.status == "paid":
+        if order.provider_payment_id == charge_id:
+            return order
+        raise ValidationAppError("Счёт уже оплачен другим платежом", code="stars_already_paid")
+    if order.status not in {"created", "pending"}:
+        raise ValidationAppError("Счёт уже нельзя оплатить", code="stars_order_closed")
+    if currency.upper() != "XTR":
+        raise ValidationAppError("Неверная валюта платежа", code="stars_currency_mismatch")
+    if order.stars_amount is None or total_amount != order.stars_amount:
+        raise ValidationAppError("Сумма платежа не совпадает", code="stars_amount_mismatch")
+    plan = await db.get(Plan, order.plan_id)
+    if plan is None:
+        raise ValidationAppError("Тариф не найден", code="plan_not_found")
+    now = utcnow()
+    event = VerifiedEvent(
+        provider_event_id=f"telegram_stars:{charge_id}",
+        event_type="payment.succeeded",
+        provider_payment_id=charge_id,
+        status="succeeded",
+        order_id=order.id,
+        amount_kopecks=order.amount_kopecks,
+        currency="XTR",
+        payload={
+            "telegram_payment_charge_id": charge_id,
+            "telegram_user_id": int(telegram_user_id),
+            "total_amount": total_amount,
+            "currency": currency,
+        },
+        signature_valid=True,
+    )
+    order.provider_payment_id = charge_id
+    order.status = "paid"
+    order.paid_at = now
+    order.raw_metadata = {
+        **(order.raw_metadata or {}),
+        "telegram_payment_charge_id": charge_id,
+        "telegram_user_id": int(telegram_user_id),
+    }
+    await _record_event(
+        db, provider="telegram_stars", event=event, order_id=order.id, signature_valid=True
+    )
+    await _activate_subscription(db, order=order, plan=plan, event=event)
+    db.add(
+        AuditLog(
+            id=uuid4(),
+            actor_id=None,
+            actor_role="system",
+            action="payment.paid",
+            object_type="payment_order",
+            object_id=str(order.id),
+            metadata_json={
+                "provider": "telegram_stars",
+                "stars_amount": order.stars_amount,
+                "charge_id": charge_id,
+            },
+        )
+    )
+    await db.commit()
+    await db.refresh(order)
+    return order
 
 
 async def list_orders(db: AsyncSession, user: User) -> list[BillingOrderView]:
@@ -686,10 +930,12 @@ async def admin_refund(
     if order.provider_payment_id is None:
         raise ValidationAppError("У платежа нет идентификатора провайдера", code="order_invalid")
     provider = get_payment_provider(order.provider)
+    metadata = dict(order.raw_metadata or {})
     provider_refund_id = await provider.refund(
         order.provider_payment_id,
         order.amount_kopecks,
         f"refund:{order.id}",
+        metadata=metadata,
     )
     db.add(
         Refund(

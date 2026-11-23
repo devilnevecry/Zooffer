@@ -127,16 +127,35 @@ class PartnerInquiryRequest(BaseModel):
 
     company: str = Field(min_length=2, max_length=160)
     contact_name: str = Field(min_length=2, max_length=120)
-    email: str = Field(min_length=5, max_length=200)
+    telegram: str = Field(min_length=2, max_length=64)
+    email: str | None = Field(default=None, max_length=200)
     phone: str | None = Field(default=None, max_length=40)
     category: str = Field(min_length=2, max_length=24)
     message: str = Field(min_length=10, max_length=3000)
     consent: bool
 
+    @field_validator("telegram")
+    @classmethod
+    def telegram_handle(cls, value: str) -> str:
+        cleaned = value.strip()
+        valid_handle = cleaned.startswith("@") or cleaned.startswith("https://t.me/")
+        if not valid_handle:
+            raise ValueError("Укажите Telegram: @username или ссылку t.me/…")
+        if cleaned.startswith("https://t.me/"):
+            cleaned = cleaned[len("https://t.me/") :]
+        cleaned = cleaned.lstrip("@").strip()
+        if len(cleaned) < 2 or " " in cleaned or cleaned.startswith("."):
+            raise ValueError("Укажите Telegram: @username или ссылку t.me/…")
+        return f"@{cleaned}"
+
     @field_validator("email")
     @classmethod
-    def email_has_at(cls, value: str) -> str:
+    def email_has_at(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         cleaned = value.strip()
+        if not cleaned:
+            return None
         if "@" not in cleaned or cleaned.startswith("@") or cleaned.endswith("@"):
             raise ValueError("Укажите корректный e-mail")
         return cleaned

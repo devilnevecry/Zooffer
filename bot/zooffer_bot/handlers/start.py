@@ -3,7 +3,7 @@ from __future__ import annotations
 from aiogram import Bot, F, Router
 from aiogram.filters import CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, LabeledPrice, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from zooffer.core.errors import AppError
 from zooffer.core.utils import validate_display_name
@@ -39,6 +39,31 @@ async def _apply_payload(
         return
     if payload.startswith("utm_"):
         await services.record_campaign(db, user, payload[4:].split("_", 2))
+        return
+    if payload.startswith("buy_"):
+        # The website hands the user over to the bot: Stars can only be charged
+        # inside Telegram, never through an external card link.
+        plan_code = payload[4:].strip()
+        if not services.payments_available():
+            await bot.send_message(chat_id=chat_id, text=texts.plan_payment_unavailable_text())
+            return
+        try:
+            order, plan = await services.prepare_stars_order(db, user, plan_code)
+        except AppError as exc:
+            await bot.send_message(chat_id=chat_id, text=exc.message)
+            return
+        if not order.stars_amount:
+            await bot.send_message(chat_id=chat_id, text=texts.plan_payment_unavailable_text())
+            return
+        await bot.send_invoice(
+            chat_id=chat_id,
+            title=f"Zooffer {plan.name}",
+            description=plan.description[:255],
+            payload=f"stars:{order.id}",
+            provider_token="",
+            currency="XTR",
+            prices=[LabeledPrice(label=plan.name[:32], amount=order.stars_amount)],
+        )
         return
     if payload.startswith("listing_"):
         public_id = await services.parse_listing_public_id(payload[8:])
