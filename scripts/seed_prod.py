@@ -7,7 +7,7 @@ re-run after a deploy.
 Usage (from the repository root):
 
     .venv\\Scripts\\python scripts\\seed_prod.py
-    .venv\\Scripts\\python scripts\\seed_prod.py --stars-plus 150 --stars-premium 300
+    .venv\\Scripts\\python scripts\\seed_prod.py --stars-plus 1 --stars-premium 1
 
 Prices in Stars are the real charge amount. ``--keep-placeholder`` leaves the
 "price not approved" flag on, which makes production purchases fail closed.
@@ -53,7 +53,7 @@ PLAN_SPECS: list[dict[str, object]] = [
         "name": "Zooffer Plus",
         "description": "Безлимитные свайпы, отмена последнего свайпа и расширенная галерея.",
         "price_kopecks": 29900,
-        "stars_amount": 150,
+        "stars_amount": 1,
         "period_days": 30,
         "entitlements": ["unlimited_swipes", "undo", "extended_photos", "ad_free"],
         "sort_order": 10,
@@ -63,7 +63,7 @@ PLAN_SPECS: list[dict[str, object]] = [
         "name": "Zooffer Premium",
         "description": "Всё из Plus, приоритетная модерация и продвижение объявлений.",
         "price_kopecks": 59900,
-        "stars_amount": 300,
+        "stars_amount": 1,
         "period_days": 30,
         "entitlements": [
             "unlimited_swipes",
@@ -168,8 +168,8 @@ async def main() -> None:
     parser = argparse.ArgumentParser(
         description="Seed Zooffer production reference data."
     )
-    parser.add_argument("--stars-plus", type=int, default=150)
-    parser.add_argument("--stars-premium", type=int, default=300)
+    parser.add_argument("--stars-plus", type=int, default=1)
+    parser.add_argument("--stars-premium", type=int, default=1)
     parser.add_argument(
         "--keep-placeholder",
         action="store_true",

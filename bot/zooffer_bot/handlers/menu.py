@@ -398,11 +398,11 @@ async def choose_crypto_plan(
     user: User | None,
 ) -> None:
     """Create and send a crypto wallet payment order (additional payment path)."""
-    parts = unpack(callback.data, 2)
+    parts = unpack(callback.data, 3)
     if parts is None or parts[0] != "buycrypto":
         await safe_callback_answer(callback, "Кнопка устарела.")
         return
-    plan_code = parts[1]
+    plan_code = parts[2]
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
