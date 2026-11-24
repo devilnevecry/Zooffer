@@ -335,17 +335,15 @@ def plans_keyboard(plans: list[tuple[str, str]]) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=label[:48], callback_data=pack("buy", "plan", code[:24]))]
         for code, label in plans[:8]
     ]
-    rows.extend(
-        [
+    for code, _label in plans[:8]:
+        rows.append(
             [
                 InlineKeyboardButton(
                     text="💎 Оплатить криптой (Walt)",
                     callback_data=pack("buycrypto", "plan", code[:24]),
-                ),
+                )
             ]
-        ]
-        for code, _label in plans[:8]
-    )
+        )
     rows.append([InlineKeyboardButton(text="Назад", callback_data=pack("menu", "subscription"))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
