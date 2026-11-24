@@ -686,12 +686,93 @@ class TelegramStarsProvider:
         return f"stars-refund-{provider_payment_id}"
 
 
+class CryptoPaymentProvider:
+    """Crypto wallet payment adapter (additional path, e.g. a Telegram wallet).
+
+    Crypto payments do not flow through an HTTP webhook: the payer transfers
+    crypto to the configured wallet address and an operator/admin confirms the
+    payment. The provider exposes the wallet as the provider payment id so orders
+    and confirmations stay auditable.
+    """
+
+    name = "crypto"
+
+    async def create_payment(
+        self,
+        *,
+        order_id: UUID,
+        amount_kopecks: int,
+        currency: str,
+        description: str,
+        return_url: str,
+        idempotency_key: str,
+        metadata: dict[str, str],
+    ) -> PaymentIntent:
+        del order_id, amount_kopecks, currency, description, return_url, idempotency_key, metadata
+        if not settings.crypto_payment_wallet_address:
+            raise PaymentProviderNotConfigured(
+                "CRYPTO_PAYMENT_WALLET_ADDRESS is not configured", code="crypto_not_configured"
+            )
+        return PaymentIntent(
+            provider_payment_id=settings.crypto_payment_wallet_address,
+            status="pending",
+            confirmation_url=None,
+            raw={
+                "wallet_address": settings.crypto_payment_wallet_address,
+                "asset": settings.crypto_payment_asset,
+                "network": settings.crypto_payment_network,
+            },
+        )
+
+    async def verify_webhook(self, headers: dict[str, str], body: bytes) -> VerifiedEvent:
+        # Crypto payments are confirmed off-chain (manual/admin), so no signature
+        # verification is performed here; the creation event is the anchor.
+        del headers, body
+        return VerifiedEvent(
+            provider_event_id=f"crypto:{settings.crypto_payment_wallet_address}",
+            event_type="payment.created",
+            provider_payment_id=settings.crypto_payment_wallet_address,
+            status="pending",
+            amount_kopecks=0,
+            currency=settings.crypto_payment_asset,
+            payload={"wallet_address": settings.crypto_payment_wallet_address},
+            signature_valid=True,
+        )
+
+    async def fetch_payment(self, provider_payment_id: str) -> ProviderState:
+        return ProviderState(
+            provider_payment_id=provider_payment_id,
+            status="pending",
+            amount_kopecks=0,
+            currency=settings.crypto_payment_asset,
+            paid=False,
+        )
+
+    async def refund(
+        self,
+        provider_payment_id: str,
+        amount_kopecks: int,
+        idempotency_key: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> str:
+        del amount_kopecks, idempotency_key, metadata
+        # Crypto refunds are performed off-chain from the service wallet; the
+        # merchant cabinet / owner confirms the refund manually.
+        return f"crypto-refund-{provider_payment_id}"
+
+
 def get_payment_provider(name: str | None = None) -> PaymentProvider:
     selected = (name or settings.payment_provider).lower()
     configured = settings.payment_provider.lower()
     # Telegram Stars may be enabled alongside a website provider.
     if selected == "telegram_stars" and settings.stars_enabled:
         return TelegramStarsProvider()
+    if (
+        selected == "crypto"
+        and settings.crypto_payment_enabled
+        and settings.crypto_payment_wallet_address
+    ):
+        return CryptoPaymentProvider()
     if selected != configured:
         raise PaymentProviderNotConfigured(
             "This payment provider is not enabled", code="provider_not_enabled"
@@ -708,4 +789,10 @@ def get_payment_provider(name: str | None = None) -> PaymentProvider:
         return RobokassaProvider()
     if selected == "telegram_stars":
         return TelegramStarsProvider()
+    if selected == "crypto":
+        if not settings.crypto_payment_wallet_address:
+            raise PaymentProviderNotConfigured(
+                "CRYPTO_PAYMENT_WALLET_ADDRESS is not configured", code="crypto_not_configured"
+            )
+        return CryptoPaymentProvider()
     raise PaymentProviderNotConfigured("Unknown payment provider", code="unknown_provider")

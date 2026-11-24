@@ -62,6 +62,12 @@ def payment_mode() -> str:
         )
     if settings.payment_provider == "telegram_stars":
         return "stars" if settings.stars_enabled else "unavailable"
+    if settings.payment_provider == "crypto":
+        return (
+            "crypto"
+            if settings.crypto_payment_enabled and settings.crypto_payment_wallet_address
+            else "unavailable"
+        )
     if settings.payment_provider == "fake" and settings.environment in {"dev", "test"}:
         return "demo"
     return "unavailable"
@@ -257,6 +263,70 @@ async def prepare_stars_order(
     return order, plan
 
 
+async def prepare_crypto_order(
+    db: AsyncSession, user: User, plan_code: str
+) -> tuple[PaymentOrder, Plan]:
+    """Create (or reuse) a pending crypto wallet payment order.
+
+    Additional purchase path next to Telegram Stars. The payer transfers crypto
+    to the configured wallet address; an operator confirms the payment off-chain.
+    """
+    plan = await _plan(db, plan_code)
+    if plan.price_kopecks <= 0:
+        raise ValidationAppError("Этот тариф не требует оплаты", code="free_plan_not_purchasable")
+    if settings.is_production and plan.is_placeholder_price:
+        raise ValidationAppError(
+            "Цена тарифа ещё не утверждена. Оплата временно недоступна.",
+            code="placeholder_price",
+        )
+    now = utcnow()
+    recent = await db.scalar(
+        select(PaymentOrder)
+        .where(
+            PaymentOrder.user_id == user.id,
+            PaymentOrder.plan_id == plan.id,
+            PaymentOrder.provider == "crypto",
+            PaymentOrder.status.in_(["created", "pending"]),
+            PaymentOrder.created_at >= now - timedelta(minutes=REUSE_ORDER_MINUTES),
+            PaymentOrder.expires_at.is_(None) | (PaymentOrder.expires_at > now),
+        )
+        .order_by(PaymentOrder.created_at.desc())
+        .limit(1)
+    )
+    if recent is not None:
+        return recent, plan
+    provider = get_payment_provider("crypto")
+    order_id = uuid4()
+    intent = await provider.create_payment(
+        order_id=order_id,
+        amount_kopecks=plan.price_kopecks,
+        currency=plan.currency,
+        description=f"Zooffer: {plan.name}",
+        return_url=_return_url(order_id),
+        idempotency_key=f"crypto:{uuid4()}",
+        metadata={"plan_code": plan.code, "user_public_id": str(user.public_id)},
+    )
+    order = PaymentOrder(
+        id=order_id,
+        user_id=user.id,
+        plan_id=plan.id,
+        provider="crypto",
+        provider_payment_id=intent.provider_payment_id,
+        idempotency_key=f"crypto:{uuid4()}",
+        amount_kopecks=plan.price_kopecks,
+        currency=plan.currency,
+        stars_amount=plan.stars_amount,
+        status=intent.status,
+        confirmation_url=intent.confirmation_url,
+        expires_at=now + timedelta(minutes=ORDER_TTL_MINUTES),
+        raw_metadata={**(intent.raw or {}), "plan_code": plan.code},
+    )
+    db.add(order)
+    await db.commit()
+    await db.refresh(order)
+    return order, plan
+
+
 async def create_stars_invoice(db: AsyncSession, user: User, plan_code: str) -> StarsInvoiceView:
     order, plan = await prepare_stars_order(db, user, plan_code)
     if order.confirmation_url:
@@ -402,6 +472,57 @@ async def confirm_stars_payment(
                 "stars_amount": order.stars_amount,
                 "charge_id": charge_id,
             },
+        )
+    )
+    await db.commit()
+    await db.refresh(order)
+    return order
+
+
+async def confirm_crypto_payment(db: AsyncSession, *, order_id: UUID) -> PaymentOrder:
+    """Confirm a crypto wallet payment and activate the subscription.
+
+    Crypto payments are confirmed off-chain (by the owner/admin after the
+    transfer to the service wallet). Confirmation is idempotent per order.
+    """
+    order = await db.scalar(
+        select(PaymentOrder).where(PaymentOrder.id == order_id).with_for_update()
+    )
+    if order is None or order.provider != "crypto":
+        raise NotFoundError("Crypto order not found", code="crypto_order_not_found")
+    if order.status == "paid":
+        return order
+    if order.status not in {"created", "pending"}:
+        raise ValidationAppError("Crypto order is closed", code="crypto_order_closed")
+    plan = await db.get(Plan, order.plan_id)
+    if plan is None:
+        raise ValidationAppError("Тариф не найден", code="plan_not_found")
+    event = VerifiedEvent(
+        provider_event_id=f"crypto:{order.id}",
+        event_type="payment.succeeded",
+        provider_payment_id=order.provider_payment_id,
+        status="succeeded",
+        order_id=order.id,
+        amount_kopecks=order.amount_kopecks,
+        currency=order.currency,
+        payload={"wallet_address": order.provider_payment_id},
+        signature_valid=True,
+    )
+    order.provider_payment_id = order.provider_payment_id or f"crypto-tx-{order.id}"
+    order.status = "paid"
+    order.paid_at = utcnow()
+    order.raw_metadata = {**(order.raw_metadata or {}), "confirmed": True}
+    await _record_event(db, provider="crypto", event=event, order_id=order.id, signature_valid=True)
+    await _activate_subscription(db, order=order, plan=plan, event=event)
+    db.add(
+        AuditLog(
+            id=uuid4(),
+            actor_id=None,
+            actor_role="system",
+            action="payment.paid",
+            object_type="payment_order",
+            object_id=str(order.id),
+            metadata_json={"provider": "crypto", "amount_kopecks": order.amount_kopecks},
         )
     )
     await db.commit()

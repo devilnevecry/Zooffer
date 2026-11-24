@@ -1,8 +1,9 @@
 # Payments
 
 Status: fake provider `VERIFIED` end-to-end; Telegram Stars implemented (bot + Mini App invoice
-flow, pre-checkout validation, idempotent activation, refund); Robokassa adapter implemented against
-the documented redirect/signature API; YooKassa adapter `IMPLEMENTED-UNVERIFIED`.
+flow, pre-checkout validation, idempotent activation, refund); **crypto wallet payments added** as
+an additional path (`CRYPTO_PAYMENT_ENABLED` + wallet/asset/network); Robokassa adapter implemented
+against the documented redirect/signature API; YooKassa adapter `IMPLEMENTED-UNVERIFIED`.
 
 ## Architecture
 
@@ -24,6 +25,28 @@ client ──POST /billing/orders──▶ billing_service.create_order
                         idempotent PaymentEvent insert
                                       ▼
                      order state + subscription + notification
+```
+
+Telegram Stars flow:
+
+```text
+bot /buy | buy:<plan> ─▶ prepare_stars_order ─▶ sendInvoice (XTR)
+        │                                                   │
+        ▼                                                   ▼
+pre_checkout_query ─▶ validate_stars_precheckout      createInvoiceLink (Mini App)
+        │                                                   │
+successful_payment ─▶ confirm_stars_payment ─▶ _activate_subscription
+```
+
+Crypto wallet flow (additional path, provider `crypto`):
+
+```text
+bot buy:buycrypto:<plan> ─▶ prepare_crypto_order ─▶ PaymentIntent (wallet address)
+        │                                                   │
+        ▼                                                   ▼
+create order (provider=crypto, status=pending)   admin POST /admin/payments/{id}/confirm
+        │                                                   │
+        └──▶ owner pays crypto to wallet ─▶ confirm_crypto_payment ─▶ _activate_subscription
 ```
 
 ## Plan and order rules

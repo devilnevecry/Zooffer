@@ -24,6 +24,7 @@ async def show_favorites(
     message: Message,
     db: AsyncSession,
     user: User,
+    config: BotConfig,
 ) -> None:
     items = await services.favorites(db, user)
     labels = [(str(listing.public_id), animal.name or listing.title) for listing, animal in items]

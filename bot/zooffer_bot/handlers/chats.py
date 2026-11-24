@@ -28,6 +28,7 @@ async def show_chats(
     message: Message,
     db: AsyncSession,
     user: User,
+    config: BotConfig,
 ) -> None:
     listing = await services.conversations(db, user)
     labels: list[tuple[str, str]] = []

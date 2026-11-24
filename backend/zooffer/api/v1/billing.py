@@ -47,6 +47,16 @@ async def create_stars_invoice(
     return await billing_service.create_stars_invoice(db, auth.user, payload.plan_code)
 
 
+@router.post("/crypto/orders", response_model=BillingOrderView, status_code=201)
+async def create_crypto_order(
+    payload: BillingOrderCreateRequest, auth: CurrentAuth, db: DbSession
+) -> BillingOrderView:
+    """Create a crypto wallet payment order (additional path next to Telegram Stars)."""
+    await limiter.hit(f"crypto-order:{auth.user.id}", limit=10, window_seconds=3600)
+    order, _plan = await billing_service.prepare_crypto_order(db, auth.user, payload.plan_code)
+    return await billing_service.order_view(db, order)
+
+
 @router.get("/orders/{order_id}", response_model=BillingOrderView)
 async def get_order(order_id: UUID, auth: CurrentAuth, db: DbSession) -> BillingOrderView:
     return await billing_service.get_order(db, auth.user, order_id)

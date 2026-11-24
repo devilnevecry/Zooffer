@@ -5,6 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, LabeledPrice, Message
 from sqlalchemy.ext.asyncio import AsyncSession
+from zooffer.config import settings
 from zooffer.core.errors import AppError
 from zooffer.db.models import User
 
@@ -387,6 +388,46 @@ async def choose_plan(
         provider_token="",
         currency="XTR",
         prices=[LabeledPrice(label=plan.name[:32], amount=order.stars_amount)],
+    )
+
+
+@router.callback_query(F.data.startswith(prefix("buycrypto:")))
+async def choose_crypto_plan(
+    callback: CallbackQuery,
+    db: AsyncSession,
+    user: User | None,
+) -> None:
+    """Create and send a crypto wallet payment order (additional payment path)."""
+    parts = unpack(callback.data, 2)
+    if parts is None or parts[0] != "buycrypto":
+        await safe_callback_answer(callback, "Кнопка устарела.")
+        return
+    plan_code = parts[1]
+    if user is None:
+        await safe_callback_answer(callback, "Сначала отправьте /start.")
+        return
+    if callback.message is None:
+        await safe_callback_answer(callback)
+        return
+    if not services.payments_available():
+        await safe_callback_answer(callback)
+        await callback.message.answer(texts.plan_payment_unavailable_text())
+        return
+    try:
+        order, plan = await services.prepare_crypto_order(db, user, plan_code)
+    except AppError as exc:
+        await safe_callback_answer(callback, exc.message, show_alert=True)
+        return
+    await safe_callback_answer(callback)
+    await callback.message.answer(
+        "<b>Zooffer — оплата криптой</b>\n\n"
+        f"Тариф: {plan.name}\n"
+        f"Сумма: {order.amount_kopecks / 100:.2f} {order.currency}\n"
+        f"Кошелёк: <code>{settings.crypto_payment_wallet_address}</code>\n"
+        f"Метод: {settings.crypto_payment_asset} · {settings.crypto_payment_network}\n"
+        f"Заказ: <code>{order.id}</code>\n\n"
+        "Переведите сумму на кошелёк, затем подтвердите платёж в админ-панели "
+        "(POST /api/v1/admin/payments/{order_id}/confirm).",
     )
 
 

@@ -189,6 +189,17 @@ async def refund_payment(
     return await billing_service.admin_payment_detail(db, order_id)
 
 
+@router.post("/payments/{order_id}/confirm", response_model=AdminPaymentDetailView)
+async def confirm_payment(
+    order_id: UUID,
+    auth: PaymentsWriteAuth,
+    db: DbSession,
+) -> AdminPaymentDetailView:
+    """Admin-confirmed payment (used for off-chain crypto wallet transfers)."""
+    await billing_service.confirm_crypto_payment(db, order_id=order_id)
+    return await billing_service.admin_payment_detail(db, order_id)
+
+
 @router.post("/users/{user_public_id}/entitlements", response_model=AdminEntitlementView)
 async def grant_entitlement(
     user_public_id: UUID,

@@ -70,6 +70,18 @@ class Settings(BaseSettings):
     for the website.
     """
 
+    crypto_payment_enabled: bool = False
+    """Additional purchase path: crypto wallet payments (for example a Telegram wallet).
+
+    When enabled, the bot creates crypto wallet payment orders instead of Telegram
+    Stars invoices. The wallet address / asset are configured below. This is an
+    additional method and does not remove the Telegram Stars path.
+    """
+
+    crypto_payment_wallet_address: str = ""
+    crypto_payment_asset: str = "USDT"
+    crypto_payment_network: str = "TON"
+
     email_auth_enabled: bool = False
     """Email/password login. Always disabled in production for the Telegram-only launch.
 

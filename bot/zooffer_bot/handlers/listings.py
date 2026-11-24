@@ -85,7 +85,7 @@ async def begin_wizard(message: Message, state: FSMContext) -> None:
     await message.answer(texts.wizard_species_text(), reply_markup=species_keyboard())
 
 
-async def show_listings(message: Message, db: AsyncSession, user: User) -> None:
+async def show_listings(message: Message, db: AsyncSession, user: User, config: BotConfig) -> None:
     rows = await services.owned_listings(db, user)
     labels = [
         (
