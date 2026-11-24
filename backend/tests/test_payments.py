@@ -128,6 +128,35 @@ async def test_order_creation_demo_confirmation_and_idempotency(client: AsyncCli
     assert refreshed.current_period_end > utcnow()
 
 
+async def test_upgrade_credits_unused_days_and_keeps_one_subscription(
+    client: AsyncClient, db
+) -> None:
+    await register(client, "upgrade@example.com")
+    await _plan(db, code="plus", price=39900)
+    await _plan(db, code="premium", price=99900)
+
+    first = await _create_paid_order(client, "plus")
+    assert first["amount_kopecks"] == 39900
+
+    created = await client.post("/api/v1/billing/orders", json={"plan_code": "premium"})
+    assert created.status_code == 201, created.text
+    upgrade = created.json()
+    # 30 unused Plus days at 1330 kopecks/day = 39900 credit, capped so that
+    # at least 1 kopeck is actually charged.
+    assert upgrade["amount_kopecks"] == 60000
+    confirmed = await client.post(f"/api/v1/billing/orders/{upgrade['public_id']}/demo-confirm")
+    assert confirmed.status_code == 200, confirmed.text
+
+    current = await client.get("/api/v1/billing/subscription")
+    assert current.json()["plan_code"] == "premium"
+    db.expire_all()
+    subscriptions = (await db.scalars(select(Subscription))).all()
+    assert len(subscriptions) == 1
+    end = subscriptions[0].current_period_end
+    assert end is not None
+    assert 59 <= (end - utcnow()).days <= 60
+
+
 async def test_webhook_signature_amount_and_order_ownership(client: AsyncClient, db) -> None:
     await register(client, "webhook@example.com")
     await _plan(db)

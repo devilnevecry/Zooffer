@@ -60,6 +60,7 @@ class Subscription(Base, UUIDPrimaryKey, Timestamps):
         CheckConstraint(
             "status in ('pending','active','past_due','canceled','expired')", name="status_valid"
         ),
+        UniqueConstraint("user_id", name="uq_subscriptions_user"),
         Index("ix_subscriptions_user_status", "user_id", "status"),
     )
 

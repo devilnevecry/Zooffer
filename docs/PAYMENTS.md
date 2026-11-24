@@ -64,7 +64,7 @@ create order (provider=crypto, status=pending)   admin POST /admin/payments/{id}
 | From | Event | To | Side effect |
 |---|---|---|---|
 | created/pending | pending notification | pending | — |
-| created/pending | verified success | paid | `paid_at`, subscription activate/extend, audit, notification |
+| created/pending | verified success | paid | `paid_at`, subscription activate/extend/upgrade, audit, notification |
 | created/pending | cancel/fail | canceled/failed | — |
 | paid | refund | refunded | refund row, entitlement revoked immediately, notification |
 | any | duplicate `provider_event_id` | unchanged | returns `duplicate` |
@@ -75,9 +75,16 @@ Subscription statuses: `pending`, `active`, `past_due`, `canceled`, `expired`.
 ## Subscription timing
 
 - First purchase: period starts now and ends `now + period_days`.
-- Renewal or plan change while active: the new period is appended to
+- Renewal of the **same** plan while active: the new period is appended to
   `max(now, current_period_end)`, so paid days are preserved.
-- Plan change applies immediately; there is no monetary proration.
+- **Upgrade** to a strictly more expensive plan (by per-day rate): unused time on
+  the old plan is converted at the old daily rate and subtracted from the new
+  price (at least one billing unit is always charged). The new period is
+  `now + unused_old_time + new_period_days`, i.e. `15 + 30 = 45` days.
+- Abuse guards: only active subscriptions, only real upgrades, unused time capped
+  at one old period, at most one open order per user, and a unique index on
+  `subscriptions.user_id` guarantees a single subscription row.
+- Downgrade: no credit, the new period starts now.
 - Cancellation sets `cancel_at_period_end` and keeps access until the paid period ends.
 - Refund/revoke sets `current_period_end = now` and disables entitlements immediately.
 - There is no silent auto-renewal. A new payment is required for each period.

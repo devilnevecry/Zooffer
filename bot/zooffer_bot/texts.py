@@ -16,6 +16,16 @@ PURPOSE_LABELS = {
     "rehoming": "Переустройство",
 }
 
+ENTITLEMENT_LABELS = {
+    "unlimited_swipes": "♾️ Безлимитные свайпы",
+    "undo": "↩️ Отмена последнего свайпа",
+    "see_who_liked": "💗 Кто вас лайкнул",
+    "boost": "🚀 Поднятие объявлений",
+    "extended_photos": "🖼 До 20 фотографий",
+    "priority_moderation": "⚡️ Приоритетная проверка",
+    "ad_free": "✨ Без рекламы",
+}
+
 SPECIES_LABELS = {
     "dog": "собака",
     "cat": "кошка",
@@ -312,11 +322,13 @@ def subscription_text(subscription: SubscriptionView) -> str:
         quota = "Свайпы: без ограничений."
     else:
         quota = f"Свайпов в день: {subscription.quota_limit}."
-    entitlements = (
-        "Возможности: " + ", ".join(escape(item) for item in subscription.entitlements)
-        if subscription.entitlements
-        else ""
-    )
+    entitlements = ""
+    if subscription.entitlements:
+        lines = [
+            "• " + escape(ENTITLEMENT_LABELS.get(code, code.replace("_", " ")))
+            for code in subscription.entitlements
+        ]
+        entitlements = "<b>Возможности:</b>\n" + "\n".join(lines)
     return "\n\n".join(
         part for part in ["<b>Подписка</b>", plan_line + period, quota, entitlements] if part
     )
@@ -333,9 +345,13 @@ def plans_text(has_plans: bool, payments_available: bool) -> str:
             "Если нужен особый доступ, напишите в поддержку."
         )
     return (
-        "<b>Планы</b>\n\n"
-        "Выберите план. Оплата откроется на сайте или в Mini App после "
-        "подтверждения провайдера."
+        "<b>Тарифы Zooffer</b>\n\n"
+        "Выберите тариф и способ оплаты:\n"
+        "• ⭐ Telegram Stars — счёт сразу в этом чате;\n"
+        "• 💎 Крипто (Walt) — реквизиты и подтверждение в боте.\n\n"
+        "Подписка на 30 дней, цена — от 1 звезды. Улучшения можно "
+        "подключить в любой момент: неиспользованные дни старого тарифа "
+        "засчитываются при апгрейде."
     )
 
 

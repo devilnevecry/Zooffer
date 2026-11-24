@@ -11,13 +11,13 @@ import { formatDate, formatPrice } from "@/lib/format";
 import type { BillingOrder, Plan, SubscriptionState } from "@/lib/types";
 
 const entitlementLabels: Record<string, string> = {
-  unlimited_swipes: "Неограниченные свайпы",
-  undo: "Отмена последнего свайпа",
-  see_who_liked: "Кто меня лайкнул",
-  boost: "Поднятие объявлений",
-  extended_photos: "До 20 фотографий",
-  priority_moderation: "Приоритетная проверка",
-  ad_free: "Без партнёрского блока",
+  unlimited_swipes: "♾️ Безлимитные свайпы — дневной лимит снят",
+  undo: "↩️ Отмена последнего свайпа",
+  see_who_liked: "💗 Кто вас лайкнул",
+  boost: "🚀 Поднятие ваших объявлений",
+  extended_photos: "🖼 До 20 фотографий в объявлении",
+  priority_moderation: "⚡️ Приоритетная проверка объявлений",
+  ad_free: "✨ Без партнёрского блока",
 };
 
 export function SubscriptionManager({
@@ -171,8 +171,8 @@ export function SubscriptionManager({
             <h2>Больше возможностей</h2>
             <p>
               {starsProvider
-                ? "Оплата в Telegram Stars. Условия и правила отмены — в оферте."
-                : "Все цены указаны в рублях. Условия и правила отмены — в оферте."}
+                ? "Оплата в Telegram Stars. При апгрейде неиспользованные дни старого тарифа засчитываются в счёт нового — одна подписка, без дублей. Условия и правила отмены — в оферте."
+                : "Все цены указаны в рублях. При апгрейде неиспользованные дни старого тарифа засчитываются в счёт нового. Условия и правила отмены — в оферте."}
             </p>
           </div>
         </div>
@@ -225,7 +225,8 @@ export function SubscriptionManager({
                   <ul className="plan-list">
                     {plan.entitlements.map((code) => (
                       <li key={code}>
-                        <CheckIcon width={15} height={15} /> {entitlementLabels[code] ?? code}
+                        <CheckIcon width={15} height={15} />{" "}
+                        {entitlementLabels[code] ?? code.replace(/_/g, " ")}
                       </li>
                     ))}
                   </ul>
