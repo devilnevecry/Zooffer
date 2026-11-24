@@ -13,13 +13,17 @@ from .. import services, texts
 from ..callbacks import prefix, unpack
 from ..config import BotConfig
 from ..keyboards import (
+    back_menu_keyboard,
+    crypto_paid_keyboard,
     main_menu,
     news_keyboard,
+    payment_method_keyboard,
     plans_keyboard,
+    profile_keyboard,
     settings_keyboard,
     subscription_keyboard,
 )
-from .common import ensure_onboarded, safe_callback_answer, send_main_menu
+from .common import ensure_onboarded, safe_callback_answer, send_main_menu, show_screen
 
 router = Router(name="menu")
 
@@ -82,8 +86,9 @@ async def cmd_profile(
 
     name = await services.public_name_for(db, user)
     city = await services.city_name_for(db, user)
+    subscription = await services.get_subscription_view(db, user)
     await message.answer(
-        texts.profile_text(name, city, user.role),
+        texts.profile_text(name, city, user.role, subscription),
         reply_markup=profile_keyboard(config.mini_app_url),
     )
 
@@ -239,37 +244,37 @@ async def menu_callbacks(
     if action == "home":
         await state.clear()
         await safe_callback_answer(callback, "Меню")
-        await send_main_menu(callback.message, user, db, config)
+        name = await services.public_name_for(db, user)
+        await show_screen(callback, texts.menu_text(name), main_menu(config.mini_app_url))
         return
     if action == "help":
         await safe_callback_answer(callback)
-        await callback.message.answer(texts.help_text())
+        await show_screen(callback, texts.help_text(), back_menu_keyboard("home"))
         return
     if action == "profile":
         await safe_callback_answer(callback)
-        from ..keyboards import profile_keyboard
-
         name = await services.public_name_for(db, user)
         city = await services.city_name_for(db, user)
-        await callback.message.answer(
-            texts.profile_text(name, city, user.role),
-            reply_markup=profile_keyboard(config.mini_app_url),
+        subscription = await services.get_subscription_view(db, user)
+        await show_screen(
+            callback,
+            texts.profile_text(name, city, user.role, subscription),
+            profile_keyboard(config.mini_app_url),
         )
         return
     if action == "settings":
         await safe_callback_answer(callback)
         enabled = await services.telegram_notifications_enabled(db, user.id)
-        await callback.message.answer(
-            texts.settings_text(enabled), reply_markup=settings_keyboard(enabled)
-        )
+        await show_screen(callback, texts.settings_text(enabled), settings_keyboard(enabled))
         return
     if action == "subscription":
         await safe_callback_answer(callback)
         view = await services.get_subscription_view(db, user)
         plans = await services.plan_views(db)
-        await callback.message.answer(
+        await show_screen(
+            callback,
             texts.subscription_text(view),
-            reply_markup=subscription_keyboard(bool(plans)),
+            subscription_keyboard(bool(plans)),
         )
         return
     if action == "buy":
@@ -280,14 +285,19 @@ async def menu_callbacks(
             if plan.price_kopecks > 0 and plan.stars_amount
         ]
         available = services.payments_available()
-        await callback.message.answer(
-            texts.plans_text(bool(plans), available),
-            reply_markup=plans_keyboard([(plan.code, _plan_label(plan)) for plan in plans])
-            if plans and available
-            else main_menu(config.mini_app_url),
+        if not available or not plans:
+            text = (
+                texts.plan_payment_unavailable_text()
+                if not available
+                else texts.plans_text(False, True)
+            )
+            await show_screen(callback, text, back_menu_keyboard("subscription"))
+            return
+        await show_screen(
+            callback,
+            texts.plans_text(True, True),
+            plans_keyboard([(plan.code, _plan_label(plan)) for plan in plans]),
         )
-        if plans and not available:
-            await callback.message.answer(texts.plan_payment_unavailable_text())
         return
     if action == "support":
         await safe_callback_answer(callback)
@@ -346,8 +356,7 @@ async def toggle_notifications(
     await safe_callback_answer(
         callback, "Уведомления включены" if enabled else "Уведомления выключены"
     )
-    if callback.message is not None:
-        await callback.message.edit_reply_markup(reply_markup=settings_keyboard(enabled))
+    await show_screen(callback, texts.settings_text(enabled), settings_keyboard(enabled))
 
 
 @router.callback_query(F.data.startswith(prefix("buy:")))
@@ -369,7 +378,42 @@ async def choose_plan(
         return
     if not services.payments_available():
         await safe_callback_answer(callback)
-        await callback.message.answer(texts.plan_payment_unavailable_text())
+        await show_screen(
+            callback, texts.plan_payment_unavailable_text(), back_menu_keyboard("subscription")
+        )
+        return
+    plan_view = next(
+        (p for p in await services.plan_views(db) if p.code == parts[2]),
+        None,
+    )
+    if plan_view is None:
+        await safe_callback_answer(callback, "Тариф не найден. Откройте /buy.", show_alert=True)
+        return
+    await safe_callback_answer(callback)
+    await show_screen(
+        callback,
+        texts.plan_details_text(plan_view),
+        payment_method_keyboard(plan_view.code, plan_view.stars_amount or 0),
+    )
+
+
+@router.callback_query(F.data.startswith(prefix("buystars:")))
+async def choose_stars_plan(
+    callback: CallbackQuery,
+    db: AsyncSession,
+    user: User | None,
+    bot: Bot,
+) -> None:
+    """Third step: send a Telegram Stars invoice for the selected plan."""
+    parts = unpack(callback.data, 3)
+    if parts is None or parts[0] != "buystars":
+        await safe_callback_answer(callback, "Кнопка устарела.")
+        return
+    if user is None:
+        await safe_callback_answer(callback, "Сначала отправьте /start.")
+        return
+    if callback.message is None:
+        await safe_callback_answer(callback)
         return
     try:
         order, plan = await services.prepare_stars_order(db, user, parts[2])
@@ -378,7 +422,9 @@ async def choose_plan(
         return
     await safe_callback_answer(callback)
     if not order.stars_amount:
-        await callback.message.answer(texts.plan_payment_unavailable_text())
+        await show_screen(
+            callback, texts.plan_payment_unavailable_text(), back_menu_keyboard("subscription")
+        )
         return
     await bot.send_invoice(
         chat_id=callback.message.chat.id,
@@ -397,7 +443,7 @@ async def choose_crypto_plan(
     db: AsyncSession,
     user: User | None,
 ) -> None:
-    """Create and send a crypto wallet payment order (additional payment path)."""
+    """Third step: show wallet details for an off-chain crypto transfer."""
     parts = unpack(callback.data, 3)
     if parts is None or parts[0] != "buycrypto":
         await safe_callback_answer(callback, "Кнопка устарела.")
@@ -409,25 +455,24 @@ async def choose_crypto_plan(
     if callback.message is None:
         await safe_callback_answer(callback)
         return
-    if not services.payments_available():
-        await safe_callback_answer(callback)
-        await callback.message.answer(texts.plan_payment_unavailable_text())
-        return
     try:
         order, plan = await services.prepare_crypto_order(db, user, plan_code)
     except AppError as exc:
         await safe_callback_answer(callback, exc.message, show_alert=True)
         return
     await safe_callback_answer(callback)
-    await callback.message.answer(
-        "<b>Zooffer — оплата криптой</b>\n\n"
-        f"Тариф: {plan.name}\n"
-        f"Сумма: {order.amount_kopecks / 100:.2f} {order.currency}\n"
-        f"Кошелёк: <code>{settings.crypto_payment_wallet_address}</code>\n"
-        f"Метод: {settings.crypto_payment_asset} · {settings.crypto_payment_network}\n"
-        f"Заказ: <code>{order.id}</code>\n\n"
-        "Переведите сумму на кошелёк, затем подтвердите платёж в админ-панели "
-        "(POST /api/v1/admin/payments/{order_id}/confirm).",
+    await show_screen(
+        callback,
+        texts.crypto_payment_text(
+            plan_name=plan.name,
+            amount=order.amount_kopecks / 100,
+            currency=order.currency,
+            wallet=settings.crypto_payment_wallet_address,
+            asset=settings.crypto_payment_asset,
+            network=settings.crypto_payment_network,
+            order_id=str(order.id),
+        ),
+        crypto_paid_keyboard(),
     )
 
 

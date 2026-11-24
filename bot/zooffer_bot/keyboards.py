@@ -54,21 +54,24 @@ def main_reply_keyboard(mini_app_url: str) -> ReplyKeyboardMarkup:
 def main_menu(mini_app_url: str) -> InlineKeyboardMarkup:
     rows = [
         [
-            InlineKeyboardButton(text="Подбор", callback_data=pack("menu", "swipe")),
-            InlineKeyboardButton(text="Избранное", callback_data=pack("menu", "favorites")),
+            InlineKeyboardButton(text="🔀 Подбор", callback_data=pack("menu", "swipe")),
+            InlineKeyboardButton(text="💛 Избранное", callback_data=pack("menu", "favorites")),
         ],
         [
-            InlineKeyboardButton(text="Сообщения", callback_data=pack("menu", "chats")),
-            InlineKeyboardButton(text="Мои объявления", callback_data=pack("menu", "listings")),
+            InlineKeyboardButton(text="💬 Сообщения", callback_data=pack("menu", "chats")),
+            InlineKeyboardButton(text="🐾 Мои объявления", callback_data=pack("menu", "listings")),
         ],
         [
-            InlineKeyboardButton(text="Профиль", callback_data=pack("menu", "profile")),
-            InlineKeyboardButton(text="Помощь", callback_data=pack("menu", "help")),
+            InlineKeyboardButton(text="👤 Профиль", callback_data=pack("menu", "profile")),
+            InlineKeyboardButton(text="⭐ Подписка", callback_data=pack("menu", "subscription")),
+        ],
+        [
+            InlineKeyboardButton(text="ℹ️ Помощь", callback_data=pack("menu", "help")),
         ],
     ]
     web_app = _web_app(mini_app_url)
     if web_app is not None:
-        rows.append([InlineKeyboardButton(text="Открыть Zooffer", web_app=web_app)])
+        rows.append([InlineKeyboardButton(text="🌐 Открыть сайт", web_app=web_app)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -299,24 +302,28 @@ def publish_confirm_keyboard(listing_public_id: str) -> InlineKeyboardMarkup:
 def profile_keyboard(mini_app_url: str) -> InlineKeyboardMarkup:
     rows = [
         [
-            InlineKeyboardButton(text="Настройки", callback_data=pack("menu", "settings")),
-            InlineKeyboardButton(text="Подписка", callback_data=pack("menu", "subscription")),
+            InlineKeyboardButton(text="⚙️ Настройки", callback_data=pack("menu", "settings")),
+            InlineKeyboardButton(text="⭐ Подписка", callback_data=pack("menu", "subscription")),
         ],
-        [InlineKeyboardButton(text="Поддержка", callback_data=pack("menu", "support"))],
-        [InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))],
+        [
+            InlineKeyboardButton(text="⭐ Выбрать тариф", callback_data=pack("menu", "buy")),
+            InlineKeyboardButton(text="💬 Поддержка", callback_data=pack("menu", "support")),
+        ],
+        [InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))],
     ]
     web_app = _web_app(f"{mini_app_url}/profile")
     if web_app is not None:
-        rows.insert(0, [InlineKeyboardButton(text="Открыть профиль", web_app=web_app)])
+        rows.insert(0, [InlineKeyboardButton(text="🌐 Открыть профиль", web_app=web_app)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def settings_keyboard(telegram_on: bool) -> InlineKeyboardMarkup:
-    toggle = "Выключить уведомления" if telegram_on else "Включить уведомления"
+    toggle = "🔕 Выключить уведомления" if telegram_on else "🔔 Включить уведомления"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text=toggle, callback_data=pack("set", "notify"))],
-            [InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))],
+            [InlineKeyboardButton(text="⬅️ В профиль", callback_data=pack("menu", "profile"))],
+            [InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))],
         ]
     )
 
@@ -324,28 +331,79 @@ def settings_keyboard(telegram_on: bool) -> InlineKeyboardMarkup:
 def subscription_keyboard(has_plans: bool) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     if has_plans:
-        rows.append([InlineKeyboardButton(text="Выбрать план", callback_data=pack("menu", "buy"))])
-    rows.append([InlineKeyboardButton(text="Поддержка", callback_data=pack("menu", "support"))])
-    rows.append([InlineKeyboardButton(text="В меню", callback_data=pack("menu", "home"))])
+        rows.append(
+            [InlineKeyboardButton(text="🚀 Улучшить подписку", callback_data=pack("menu", "buy"))]
+        )
+    rows.append(
+        [InlineKeyboardButton(text="📊 Виджет подписки", callback_data=pack("widget", "status"))]
+    )
+    rows.append([InlineKeyboardButton(text="⬅️ В профиль", callback_data=pack("menu", "profile"))])
+    rows.append([InlineKeyboardButton(text="💬 Поддержка", callback_data=pack("menu", "support"))])
+    rows.append([InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def plans_keyboard(plans: list[tuple[str, str]]) -> InlineKeyboardMarkup:
     rows = [
-        [InlineKeyboardButton(text=label[:48], callback_data=pack("buy", "plan", code[:24]))]
+        [InlineKeyboardButton(text=label[:60], callback_data=pack("buy", "plan", code[:24]))]
         for code, label in plans[:8]
     ]
-    for code, _label in plans[:8]:
-        rows.append(
+    rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=pack("menu", "subscription"))])
+    rows.append([InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def payment_method_keyboard(plan_code: str, stars_amount: int) -> InlineKeyboardMarkup:
+    """Second step: choose how to pay for the already selected plan."""
+    code = plan_code[:24]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="💎 Оплатить криптой (Walt)",
-                    callback_data=pack("buycrypto", "plan", code[:24]),
+                    text=f"⭐ Оплатить звёздами · {stars_amount}★",
+                    callback_data=pack("buystars", "plan", code),
                 )
-            ]
-        )
-    rows.append([InlineKeyboardButton(text="Назад", callback_data=pack("menu", "subscription"))])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+            ],
+            [
+                InlineKeyboardButton(
+                    text="💎 Оплатить криптой (USDT, TON)",
+                    callback_data=pack("buycrypto", "plan", code),
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="👛 Кошельком Telegram (виджет)",
+                    callback_data=pack("widgetpay", "plan", code),
+                )
+            ],
+            [InlineKeyboardButton(text="⬅️ Другие тарифы", callback_data=pack("menu", "buy"))],
+            [InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))],
+        ]
+    )
+
+
+def crypto_paid_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="💬 Написать в поддержку", callback_data=pack("menu", "support")
+                )
+            ],
+            [InlineKeyboardButton(text="⬅️ К подписке", callback_data=pack("menu", "subscription"))],
+            [InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))],
+        ]
+    )
+
+
+def back_menu_keyboard(back_action: str = "subscription") -> InlineKeyboardMarkup:
+    """Universal navigation: one step back plus the main menu."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ Назад", callback_data=pack("menu", back_action))],
+            [InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))],
+        ]
+    )
 
 
 def support_cancel() -> InlineKeyboardMarkup:

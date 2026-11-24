@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from html import escape
 from zoneinfo import ZoneInfo
 
-from zooffer.schemas.account import SubscriptionView
+from zooffer.schemas.account import PlanView, SubscriptionView
 from zooffer.schemas.messaging import ConversationSummaryView
 from zooffer.schemas.public import PublicListingCardView, PublicListingView
 
@@ -169,10 +169,25 @@ def menu_text(name: str) -> str:
     )
 
 
-def profile_text(name: str, city: str | None, role: str) -> str:
+def profile_text(
+    name: str,
+    city: str | None,
+    role: str,
+    subscription: SubscriptionView | None = None,
+) -> str:
     rows = [f"<b>{escape(name)}</b>", city or "Город не указан"]
     if role != "user":
         rows.append(f"Роль: {escape(role)}")
+    if subscription is not None:
+        if subscription.status in {"active", "past_due"} and subscription.plan_name:
+            until = (
+                f" до {_when(subscription.current_period_end)}"
+                if subscription.current_period_end
+                else ""
+            )
+            rows.append(f"Подписка: <b>{escape(subscription.plan_name)}</b>{until}")
+        else:
+            rows.append("Подписка: бесплатный доступ")
     rows.append("Контакты скрыты от других пользователей.")
     return "\n".join(rows)
 
@@ -331,6 +346,49 @@ def subscription_text(subscription: SubscriptionView) -> str:
         entitlements = "<b>Возможности:</b>\n" + "\n".join(lines)
     return "\n\n".join(
         part for part in ["<b>Подписка</b>", plan_line + period, quota, entitlements] if part
+    )
+
+
+def plan_details_text(plan: PlanView) -> str:
+    features = [
+        "• " + escape(ENTITLEMENT_LABELS.get(code, code.replace("_", " ")))
+        for code in plan.entitlements
+    ] or ["• Базовый доступ"]
+    price = f"{plan.stars_amount} ★" if plan.stars_amount else f"{plan.price_kopecks / 100:,.0f} ₽"
+    price = price.replace(",", " ")
+    return "\n\n".join(
+        [
+            "<b>Выбранный тариф</b>",
+            f"<b>{escape(plan.name)}</b>\n{escape(plan.description)}",
+            "<b>Что даёт:</b>\n" + "\n".join(features),
+            f"<b>Условия:</b> {plan.period_days} дней · {price}. "
+            "Неиспользованные дни старого тарифа при апгрейде переходят в новый.",
+            "Выберите способ оплаты 👇",
+        ]
+    )
+
+
+def crypto_payment_text(
+    *,
+    plan_name: str,
+    amount: float,
+    currency: str,
+    wallet: str,
+    asset: str,
+    network: str,
+    order_id: str,
+) -> str:
+    return (
+        "<b>Оплата криптой</b>\n\n"
+        f"Тариф: <b>{escape(plan_name)}</b>\n"
+        f"Сумма: <b>{amount:.2f} {escape(currency)}</b>\n"
+        f"Монета: {escape(asset)} · сеть {escape(network)}\n"
+        f"Кошелёк: <code>{escape(wallet)}</code>\n"
+        f"Код платежа: <code>{escape(order_id)}</code>\n\n"
+        "Переведите сумму на кошелёк, затем нажмите «Написать в поддержку» и "
+        "пришлите код платежа — мы подтвердим зачисление и включим подписку. "
+        "Обычно это занимает несколько минут.\n\n"
+        "Если уже перевели — просто напишите в поддержку, ваш платёж найдём по коду."
     )
 
 

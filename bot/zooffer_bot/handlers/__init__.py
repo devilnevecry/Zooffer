@@ -1,6 +1,17 @@
 from __future__ import annotations
 
-from . import chats, discovery, fallback, favorites, listings, menu, payments, start, support
+from . import (
+    chats,
+    discovery,
+    fallback,
+    favorites,
+    listings,
+    menu,
+    payments,
+    start,
+    support,
+    widgets,
+)
 
 ROUTERS = (
     start.router,
@@ -11,6 +22,7 @@ ROUTERS = (
     chats.router,
     listings.router,
     support.router,
+    widgets.router,
     fallback.router,
 )
 

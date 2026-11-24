@@ -111,6 +111,26 @@ async def ensure_onboarded(message: Message, user: User | None, state, config: B
     return False
 
 
+async def show_screen(
+    callback: CallbackQuery,
+    text: str,
+    reply_markup: InlineKeyboardMarkup | None = None,
+) -> None:
+    """Replace the current message instead of stacking a new one per tap."""
+    message = callback.message
+    if message is None:
+        return
+    try:
+        if message.photo or message.video or message.animation:
+            await message.edit_caption(caption=text, reply_markup=reply_markup)
+        else:
+            await message.edit_text(text=text, reply_markup=reply_markup)
+        return
+    except TelegramBadRequest:
+        pass
+    await message.answer(text, reply_markup=reply_markup)
+
+
 async def safe_callback_answer(
     callback: CallbackQuery, text: str | None = None, *, show_alert: bool = False
 ) -> None:

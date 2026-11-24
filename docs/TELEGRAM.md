@@ -15,6 +15,8 @@ a public HTTPS domain (see `docs/DEPLOY.md`).
 | Mini App | `web/app/tg/*` | Shared API/types/design with the website |
 | Session minting | `backend/zooffer/api/v1/auth.py` | Validated `initData` → HttpOnly session |
 | Stars payments | `backend/zooffer/services/billing_service.py`, `bot/zooffer_bot/handlers/payments.py` | Invoice, pre-checkout validation, idempotent activation |
+| HTML widgets | `bot/zooffer_bot/widgets.py`, `bot/zooffer_bot/handlers/widgets.py` | Bot API 10.4: subscription card and TON wallet payment card, `widget_query` answers |
+| Purchase flow | `bot/zooffer_bot/handlers/menu.py`, `bot/zooffer_bot/keyboards.py` | Plan → payment method (Stars / crypto / TON wallet widget); screens are edited, not stacked |
 
 ## BotFather setup
 
@@ -38,6 +40,7 @@ a public HTTPS domain (see `docs/DEPLOY.md`).
    chats - Сообщения
    subscription - Подписка
    buy - Купить подписку
+   widget - Виджет подписки
    support - Поддержка
    link - Привязать аккаунт
    stop - Отключить уведомления
@@ -47,6 +50,21 @@ a public HTTPS domain (see `docs/DEPLOY.md`).
 7. `/newapp` → title `Zooffer`, short name `zooffer`, URL `https://<domain>/tg`.
 8. Payments: Telegram Stars works out of the box with the bot token. The invoice uses currency
    `XTR`, `provider_token=""`, and the amount stored in `plans.stars_amount`.
+9. For local development, `cloudflared tunnel --url http://web:3000` provides a temporary HTTPS
+   hostname. Copy that hostname into `WEB_APP_URL`, `APP_BASE_URL` and `/setdomain`; quick-tunnel
+   hostnames change when the tunnel container is recreated.
+
+## Interactive widgets (Bot API 10.4)
+
+- `/widget` or the subscription screen's «📊 Виджет подписки» button sends a native HTML widget
+  with live state. The «🔄 Обновить» button produces a `widget_query`, the bot refreshes
+  `chat_data` and answers the query.
+- «👛 Кошельком Telegram (виджет)» in the payment-method screen sends a payment widget. On tap the
+  widget asks the bot for a fresh TON transaction (`request(data, {wallet: true})`), the built-in
+  wallet sends it, and the bot records the transaction hash in the order metadata. An operator still
+  confirms the payment before activation.
+- Requires aiogram ≥ 3.34 (`aiogram==3.34.0` pinned in both pyprojects). Widgets work in private
+  chats in production; forwarding/groups remain test-server only.
 
 ## Transport: polling vs webhook
 
