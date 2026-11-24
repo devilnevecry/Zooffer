@@ -165,7 +165,7 @@ async def cmd_subscription(
     plans = await services.plan_views(db)
     await message.answer(
         texts.subscription_text(view),
-        reply_markup=subscription_keyboard(bool(plans)),
+        reply_markup=subscription_keyboard(bool(plans), view.status in {"active", "past_due"}),
     )
 
 
@@ -199,15 +199,23 @@ async def cmd_buy(
 ) -> None:
     if not await _guard(message, user, state, config) or user is None:
         return
+    await state.update_data(renew_plan=None)
     plans = await _available_plans(db, user)
     available = services.payments_available()
+    if not plans:
+        view = await services.get_subscription_view(db, user)
+        await message.answer(
+            texts.best_plan_text(view.plan_name, view.current_period_end),
+            reply_markup=subscription_keyboard(bool(view.plan_name)),
+        )
+        return
     await message.answer(
-        texts.plans_text(bool(plans), available),
+        texts.plans_text(True, available),
         reply_markup=plans_keyboard([(plan.code, _plan_label(plan)) for plan in plans])
-        if plans and available
+        if available
         else main_menu(config.mini_app_url),
     )
-    if plans and not available:
+    if not available:
         await message.answer(texts.plan_payment_unavailable_text())
 
 
@@ -283,25 +291,44 @@ async def menu_callbacks(
         await show_screen(
             callback,
             texts.subscription_text(view),
-            subscription_keyboard(bool(plans)),
+            subscription_keyboard(bool(plans), view.status in {"active", "past_due"}),
         )
         return
     if action == "buy":
+        await state.update_data(renew_plan=None)
         await safe_callback_answer(callback)
         plans = await _available_plans(db, user)
         available = services.payments_available()
-        if not available or not plans:
-            text = (
-                texts.plan_payment_unavailable_text()
-                if not available
-                else texts.plans_text(False, True)
+        if not plans:
+            view = await services.get_subscription_view(db, user)
+            await show_screen(
+                callback,
+                texts.best_plan_text(view.plan_name, view.current_period_end),
+                subscription_keyboard(bool(view.plan_name)),
             )
-            await show_screen(callback, text, back_menu_keyboard("subscription"))
+            return
+        if not available:
+            await show_screen(
+                callback, texts.plan_payment_unavailable_text(), back_menu_keyboard("subscription")
+            )
             return
         await show_screen(
             callback,
             texts.plans_text(True, True),
             plans_keyboard([(plan.code, _plan_label(plan)) for plan in plans]),
+        )
+        return
+    if action == "renew":
+        view = await services.get_subscription_view(db, user)
+        if not view.plan_code or view.status not in {"active", "past_due"}:
+            await safe_callback_answer(callback, "Активной подписки нет", show_alert=True)
+            return
+        await state.update_data(renew_plan=view.plan_code)
+        await safe_callback_answer(callback)
+        await show_screen(
+            callback,
+            texts.duration_text(view.plan_name or "Текущий тариф", "Продление без новой подписки."),
+            duration_keyboard(view.plan_code),
         )
         return
     if action == "support":
@@ -392,6 +419,7 @@ async def choose_duration(
 @router.callback_query(F.data.startswith(prefix("buy:")))
 async def choose_plan(
     callback: CallbackQuery,
+    state: FSMContext,
     db: AsyncSession,
     user: User | None,
 ) -> None:
@@ -410,7 +438,10 @@ async def choose_plan(
         return
     try:
         months = int(parts[3])
-        preview = await services.purchase_preview(db, user, parts[2], months=months)
+        renew_plan = (await state.get_data()).get("renew_plan")
+        preview = await services.purchase_preview(
+            db, user, parts[2], months=months, allow_renew=renew_plan == parts[2]
+        )
     except (ValueError, AppError) as exc:
         await safe_callback_answer(callback, str(exc), show_alert=True)
         return

@@ -328,8 +328,12 @@ def settings_keyboard(telegram_on: bool) -> InlineKeyboardMarkup:
     )
 
 
-def subscription_keyboard(has_plans: bool) -> InlineKeyboardMarkup:
+def subscription_keyboard(has_plans: bool, can_renew: bool = False) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
+    if can_renew:
+        rows.append(
+            [InlineKeyboardButton(text="⏳ Продлить подписку", callback_data=pack("menu", "renew"))]
+        )
     if has_plans:
         rows.append(
             [InlineKeyboardButton(text="🚀 Улучшить подписку", callback_data=pack("menu", "buy"))]

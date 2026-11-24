@@ -38,11 +38,14 @@ async def create_order(
 
 @router.post("/preview")
 async def purchase_preview(
-    payload: BillingOrderCreateRequest, auth: CurrentAuth, db: DbSession
+    payload: BillingOrderCreateRequest,
+    auth: CurrentAuth,
+    db: DbSession,
+    allow_renew: bool = False,
 ) -> dict:
     """Show the real price, credit and resulting term before any payment."""
     return await billing_service.purchase_preview(
-        db, auth.user, payload.plan_code, months=payload.months
+        db, auth.user, payload.plan_code, months=payload.months, allow_renew=allow_renew
     )
 
 

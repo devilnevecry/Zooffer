@@ -289,9 +289,11 @@ async def prepare_crypto_order(
 
 
 async def purchase_preview(
-    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1, allow_renew: bool = False
 ) -> dict:
-    return await billing_service.purchase_preview(db, user, plan_code, months=months)
+    return await billing_service.purchase_preview(
+        db, user, plan_code, months=months, allow_renew=allow_renew
+    )
 
 
 async def confirm_stars_payment(

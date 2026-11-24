@@ -349,6 +349,16 @@ def subscription_text(subscription: SubscriptionView) -> str:
     )
 
 
+def best_plan_text(plan_name: str | None, until) -> str:  # type: ignore[no-untyped-def]
+    when = f"до {_when(until)}" if until else ""
+    return (
+        "<b>У вас лучший тариф</b>\n\n"
+        f"{escape(plan_name or 'Premium')} {when}. Более выгодных тарифов пока нет.\n\n"
+        "Можно продлить текущий тариф на 1, 3, 6 или 12 месяцев — дни добавятся к оставшимся, "
+        "новая подписка не создаётся."
+    )
+
+
 def duration_text(name: str, description: str) -> str:
     return "\n\n".join(
         [
@@ -379,6 +389,10 @@ def plan_details_text(preview: dict) -> str:
     ]
     if current:
         lines.append(f"<b>Сейчас у вас:</b> {escape(current)}")
+    if preview.get("renewal"):
+        lines.append(
+            "<b>Продление:</b> дни добавляются к текущему сроку, новая подписка не создаётся"
+        )
     if preview["upgrade"] and credit:
         lines.append(f"Скидка за оставшиеся дни: −{credit}★")
     lines.append(f"<b>К оплате:</b> {charge}★" + (f" (было {base}★)" if credit else ""))

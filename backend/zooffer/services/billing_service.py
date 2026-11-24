@@ -187,7 +187,7 @@ async def _purchase_terms(
 
 
 async def purchase_preview(
-    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1, allow_renew: bool = False
 ) -> dict[str, Any]:
     """What the user actually gets: price, credit, term and eligibility."""
     plan = await _plan(db, plan_code)
@@ -209,6 +209,7 @@ async def purchase_preview(
     ).first()
     can_buy = True
     reason = ""
+    renewal = False
     current_name: str | None = None
     if row is not None:
         _subscription, old_plan = row
@@ -216,7 +217,13 @@ async def purchase_preview(
         new_rate = (plan.price_kopecks or 0) / plan.period_days
         old_rate = (old_plan.price_kopecks or 0) / old_plan.period_days
         if old_plan.id == plan.id:
-            can_buy, reason = False, "У вас уже этот тариф — можно продлить его на другой срок."
+            renewal = allow_renew
+            can_buy = allow_renew
+            reason = (
+                "Продление текущего тарифа"
+                if allow_renew
+                else "У вас уже этот тариф — продлить можно в разделе «Подписка»."
+            )
         elif new_rate <= old_rate:
             can_buy = False
             reason = f"У вас уже «{old_plan.name}» — этот тариф слабее."
@@ -236,6 +243,7 @@ async def purchase_preview(
         "charge_stars": terms.stars_amount or 0,
         "credit_stars": terms.credit_stars,
         "upgrade": terms.upgraded,
+        "renewal": renewal,
     }
 
 
