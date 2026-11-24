@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from html import escape
 from zoneinfo import ZoneInfo
 
+from zooffer.core.utils import utcnow
 from zooffer.schemas.account import SubscriptionView
 from zooffer.schemas.messaging import ConversationSummaryView
 from zooffer.schemas.public import PublicListingCardView, PublicListingView
@@ -328,11 +329,15 @@ def subscription_text(subscription: SubscriptionView) -> str:
         period = ""
     else:
         plan_line = f"План: <b>{escape(subscription.plan_name)}</b> ({subscription.status})."
-        period = (
-            f"\nДействует до: {_when(subscription.current_period_end)}"
-            if subscription.current_period_end
-            else ""
-        )
+        if subscription.current_period_end:
+            seconds_left = int((subscription.current_period_end - utcnow()).total_seconds())
+            days_left = max(0, -(-seconds_left // 86400))
+            period = (
+                f"\nДействует до: {_when(subscription.current_period_end)} "
+                f"(осталось {days_left} дн.)"
+            )
+        else:
+            period = ""
     if subscription.quota_unlimited:
         quota = "Свайпы: без ограничений."
     else:

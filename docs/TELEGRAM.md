@@ -65,6 +65,10 @@ a public HTTPS domain (see `docs/DEPLOY.md`).
   confirms the payment before activation.
 - Requires aiogram ≥ 3.34 (`aiogram==3.34.0` pinned in both pyprojects). Widgets work in private
   chats in production; forwarding/groups remain test-server only.
+- **Current status:** the Bot API rejects `sendWidget` for this bot with
+  `INPUT_MEDIA_WIDGET_NOT_ALLOWED` (feature is being rolled out by Telegram). The widget buttons
+  are therefore hidden in the UI; handlers stay in the code for when access is granted. The
+  Mini App at `/tg` is the working rich UI.
 
 ## Transport: polling vs webhook
 

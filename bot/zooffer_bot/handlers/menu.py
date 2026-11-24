@@ -204,9 +204,10 @@ async def cmd_buy(
     available = services.payments_available()
     if not plans:
         view = await services.get_subscription_view(db, user)
+        await state.update_data(renew_plan=view.plan_code)
         await message.answer(
             texts.best_plan_text(view.plan_name, view.current_period_end),
-            reply_markup=subscription_keyboard(bool(view.plan_name)),
+            reply_markup=duration_keyboard(view.plan_code or "premium", show_other=False),
         )
         return
     await message.answer(
@@ -301,10 +302,11 @@ async def menu_callbacks(
         available = services.payments_available()
         if not plans:
             view = await services.get_subscription_view(db, user)
+            await state.update_data(renew_plan=view.plan_code)
             await show_screen(
                 callback,
                 texts.best_plan_text(view.plan_name, view.current_period_end),
-                subscription_keyboard(bool(view.plan_name)),
+                duration_keyboard(view.plan_code or "premium", show_other=False),
             )
             return
         if not available:
