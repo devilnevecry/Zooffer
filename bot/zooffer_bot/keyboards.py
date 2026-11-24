@@ -345,7 +345,7 @@ def subscription_keyboard(has_plans: bool) -> InlineKeyboardMarkup:
 
 def plans_keyboard(plans: list[tuple[str, str]]) -> InlineKeyboardMarkup:
     rows = [
-        [InlineKeyboardButton(text=label[:60], callback_data=pack("buy", "plan", code[:24]))]
+        [InlineKeyboardButton(text=label[:60], callback_data=pack("buydur", "plan", code[:24]))]
         for code, label in plans[:8]
     ]
     rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=pack("menu", "subscription"))])
@@ -353,27 +353,47 @@ def plans_keyboard(plans: list[tuple[str, str]]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def payment_method_keyboard(plan_code: str, stars_amount: int) -> InlineKeyboardMarkup:
-    """Second step: choose how to pay for the already selected plan."""
+def duration_keyboard(plan_code: str, current_months: int = 1) -> InlineKeyboardMarkup:
+    code = plan_code[:24]
+    rows = []
+    for months in (1, 3, 6, 12):
+        label = f"{months} мес." + (" · текущий" if months == current_months else "")
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=pack("buy", "plan", code, str(months)))]
+        )
+    rows.append([InlineKeyboardButton(text="⬅️ Другие тарифы", callback_data=pack("menu", "buy"))])
+    rows.append([InlineKeyboardButton(text="🏠 В меню", callback_data=pack("menu", "home"))])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def payment_method_keyboard(
+    plan_code: str, stars_amount: int, *, months: int = 1
+) -> InlineKeyboardMarkup:
+    """Third step: choose how to pay for the selected plan and term."""
     code = plan_code[:24]
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text=f"⭐ Оплатить звёздами · {stars_amount}★",
-                    callback_data=pack("buystars", "plan", code),
+                    callback_data=pack("buystars", "plan", code, str(months)),
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="💎 Оплатить криптой (USDT, TON)",
-                    callback_data=pack("buycrypto", "plan", code),
+                    callback_data=pack("buycrypto", "plan", code, str(months)),
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="👛 Кошельком Telegram (виджет)",
-                    callback_data=pack("widgetpay", "plan", code),
+                    callback_data=pack("widgetpay", "plan", code, str(months)),
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Другой срок", callback_data=pack("buydur", "plan", code)
                 )
             ],
             [InlineKeyboardButton(text="⬅️ Другие тарифы", callback_data=pack("menu", "buy"))],

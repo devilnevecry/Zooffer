@@ -10,6 +10,7 @@ class BillingOrderCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     plan_code: str = Field(min_length=1, max_length=40)
+    months: int = Field(default=1, ge=1, le=12)
 
 
 class BillingOrderView(BaseModel):

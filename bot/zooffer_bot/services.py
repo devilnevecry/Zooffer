@@ -276,16 +276,22 @@ def payments_available() -> bool:
 
 
 async def prepare_stars_order(
-    db: AsyncSession, user: User, plan_code: str
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
 ) -> tuple[PaymentOrder, Plan]:
-    return await billing_service.prepare_stars_order(db, user, plan_code)
+    return await billing_service.prepare_stars_order(db, user, plan_code, months=months)
 
 
 async def prepare_crypto_order(
-    db: AsyncSession, user: User, plan_code: str
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
 ) -> tuple[PaymentOrder, Plan]:
     """Create a crypto wallet payment order (additional payment path)."""
-    return await billing_service.prepare_crypto_order(db, user, plan_code)
+    return await billing_service.prepare_crypto_order(db, user, plan_code, months=months)
+
+
+async def purchase_preview(
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
+) -> dict:
+    return await billing_service.purchase_preview(db, user, plan_code, months=months)
 
 
 async def confirm_stars_payment(

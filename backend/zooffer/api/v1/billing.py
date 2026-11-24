@@ -31,7 +31,19 @@ async def create_order(
     payload: BillingOrderCreateRequest, auth: CurrentAuth, db: DbSession
 ) -> BillingOrderView:
     await limiter.hit(f"billing-order:{auth.user.id}", limit=10, window_seconds=3600)
-    return await billing_service.create_order(db, auth.user, payload.plan_code)
+    return await billing_service.create_order(
+        db, auth.user, payload.plan_code, months=payload.months
+    )
+
+
+@router.post("/preview")
+async def purchase_preview(
+    payload: BillingOrderCreateRequest, auth: CurrentAuth, db: DbSession
+) -> dict:
+    """Show the real price, credit and resulting term before any payment."""
+    return await billing_service.purchase_preview(
+        db, auth.user, payload.plan_code, months=payload.months
+    )
 
 
 @router.post("/stars/invoice", response_model=StarsInvoiceView, status_code=201)
@@ -44,7 +56,9 @@ async def create_stars_invoice(
     Telegram. The bot sends the same order through ``sendInvoice``.
     """
     await limiter.hit(f"stars-invoice:{auth.user.id}", limit=20, window_seconds=3600)
-    return await billing_service.create_stars_invoice(db, auth.user, payload.plan_code)
+    return await billing_service.create_stars_invoice(
+        db, auth.user, payload.plan_code, months=payload.months
+    )
 
 
 @router.post("/crypto/orders", response_model=BillingOrderView, status_code=201)
@@ -53,7 +67,9 @@ async def create_crypto_order(
 ) -> BillingOrderView:
     """Create a crypto wallet payment order (additional path next to Telegram Stars)."""
     await limiter.hit(f"crypto-order:{auth.user.id}", limit=10, window_seconds=3600)
-    order, _plan = await billing_service.prepare_crypto_order(db, auth.user, payload.plan_code)
+    order, _plan = await billing_service.prepare_crypto_order(
+        db, auth.user, payload.plan_code, months=payload.months
+    )
     return await billing_service.order_view(db, order)
 
 

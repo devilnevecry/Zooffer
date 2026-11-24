@@ -76,7 +76,10 @@ async def cmd_widget(
     if user is None:
         await ensure_onboarded(message, user, state, config)
         return
-    await send_subscription_widget(bot, message.chat.id, user, db, config)
+    try:
+        await send_subscription_widget(bot, message.chat.id, user, db, config)
+    except TelegramBadRequest:
+        await message.answer("Виджеты пока недоступны в вашем Telegram. Пользуйтесь /menu.")
 
 
 @router.callback_query(F.data.startswith(prefix("widget:")))
@@ -95,7 +98,12 @@ async def widget_status_callback(
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
     await safe_callback_answer(callback)
-    await send_subscription_widget(bot, callback.message.chat.id, user, db, config)
+    try:
+        await send_subscription_widget(bot, callback.message.chat.id, user, db, config)
+    except TelegramBadRequest:
+        await safe_callback_answer(
+            callback, "Виджеты пока недоступны в вашем Telegram. Пользуйтесь меню.", show_alert=True
+        )
 
 
 @router.callback_query(F.data.startswith(prefix("widgetpay:")))
@@ -105,7 +113,7 @@ async def widget_payment_callback(
     bot: Bot,
     user,  # type: ignore[no-untyped-def]
 ) -> None:
-    parts = unpack(callback.data, 3)
+    parts = unpack(callback.data, 4)
     if parts is None or parts[0] != "widgetpay":
         await safe_callback_answer(callback, "Кнопка устарела.")
         return
@@ -113,12 +121,19 @@ async def widget_payment_callback(
         await safe_callback_answer(callback, "Сначала отправьте /start.")
         return
     try:
-        order, plan = await services.prepare_crypto_order(db, user, parts[2])
+        order, plan = await services.prepare_crypto_order(db, user, parts[2], months=int(parts[3]))
     except Exception:  # provider errors are surfaced as a short alert
         await safe_callback_answer(callback, "Не удалось создать платёж", show_alert=True)
         return
-    await safe_callback_answer(callback, "Виджет отправлен")
-    await _send_payment_widget(callback.message.chat.id, order, plan, bot)
+    await safe_callback_answer(callback)
+    try:
+        await _send_payment_widget(callback.message.chat.id, order, plan, bot)
+    except TelegramBadRequest:
+        await safe_callback_answer(
+            callback,
+            "Виджеты пока недоступны. Используйте обычную оплату криптой.",
+            show_alert=True,
+        )
 
 
 async def _send_payment_widget(

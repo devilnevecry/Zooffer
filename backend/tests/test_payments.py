@@ -157,6 +157,34 @@ async def test_upgrade_credits_unused_days_and_keeps_one_subscription(
     assert 59 <= (end - utcnow()).days <= 60
 
 
+async def test_months_multiplier_and_eligibility(client: AsyncClient, db) -> None:
+    await register(client, "months@example.com")
+    await _plan(db, code="plus", price=39900)
+    await _plan(db, code="premium", price=99900)
+
+    created = await client.post("/api/v1/billing/orders", json={"plan_code": "plus", "months": 3})
+    assert created.status_code == 201, created.text
+    assert created.json()["amount_kopecks"] == 119700
+    confirmed = await client.post(
+        f"/api/v1/billing/orders/{created.json()['public_id']}/demo-confirm"
+    )
+    assert confirmed.status_code == 200, confirmed.text
+
+    current = await client.get("/api/v1/billing/subscription")
+    assert current.json()["plan_code"] == "plus"
+    db.expire_all()
+    sub = (await db.scalars(select(Subscription).where(Subscription.status == "active"))).first()
+    assert sub is not None and sub.current_period_end is not None
+    assert 89 <= (sub.current_period_end - utcnow()).days <= 90
+
+    same = await client.post("/api/v1/billing/preview", json={"plan_code": "plus"})
+    assert same.status_code == 200, same.text
+    assert same.json()["can_buy"] is False
+    lower = await client.post("/api/v1/billing/preview", json={"plan_code": "premium", "months": 3})
+    assert lower.json()["can_buy"] is True
+    assert lower.json()["total_days"] > 90
+
+
 async def test_webhook_signature_amount_and_order_ownership(client: AsyncClient, db) -> None:
     await register(client, "webhook@example.com")
     await _plan(db)

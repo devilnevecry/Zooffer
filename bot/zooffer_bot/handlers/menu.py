@@ -15,6 +15,7 @@ from ..config import BotConfig
 from ..keyboards import (
     back_menu_keyboard,
     crypto_paid_keyboard,
+    duration_keyboard,
     main_menu,
     news_keyboard,
     payment_method_keyboard,
@@ -176,6 +177,18 @@ def _plan_label(plan) -> str:  # type: ignore[no-untyped-def]
     )
 
 
+async def _available_plans(db, user):  # type: ignore[no-untyped-def]
+    """Only plans that are an upgrade or a different term, never a downgrade."""
+    options = []
+    for plan in await services.plan_views(db):
+        if plan.price_kopecks <= 0 or not plan.stars_amount:
+            continue
+        preview = await services.purchase_preview(db, user, plan.code)
+        if preview["can_buy"]:
+            options.append(plan)
+    return options
+
+
 @router.message(Command("buy"))
 async def cmd_buy(
     message: Message,
@@ -186,11 +199,7 @@ async def cmd_buy(
 ) -> None:
     if not await _guard(message, user, state, config) or user is None:
         return
-    plans = [
-        plan
-        for plan in await services.plan_views(db)
-        if plan.price_kopecks > 0 and plan.stars_amount
-    ]
+    plans = await _available_plans(db, user)
     available = services.payments_available()
     await message.answer(
         texts.plans_text(bool(plans), available),
@@ -279,11 +288,7 @@ async def menu_callbacks(
         return
     if action == "buy":
         await safe_callback_answer(callback)
-        plans = [
-            plan
-            for plan in await services.plan_views(db)
-            if plan.price_kopecks > 0 and plan.stars_amount
-        ]
+        plans = await _available_plans(db, user)
         available = services.payments_available()
         if not available or not plans:
             text = (
@@ -359,22 +364,43 @@ async def toggle_notifications(
     await show_screen(callback, texts.settings_text(enabled), settings_keyboard(enabled))
 
 
+@router.callback_query(F.data.startswith(prefix("buydur:")))
+async def choose_duration(
+    callback: CallbackQuery,
+    db: AsyncSession,
+    user: User | None,
+) -> None:
+    parts = unpack(callback.data, 3)
+    if parts is None or parts[0] != "buydur":
+        await safe_callback_answer(callback, "Кнопка устарела.")
+        return
+    plan_view = next(
+        (p for p in await services.plan_views(db) if p.code == parts[2]),
+        None,
+    )
+    if user is None or plan_view is None:
+        await safe_callback_answer(callback, "Тариф не найден. Откройте /buy.", show_alert=True)
+        return
+    await safe_callback_answer(callback)
+    await show_screen(
+        callback,
+        texts.duration_text(plan_view.name, plan_view.description),
+        duration_keyboard(plan_view.code),
+    )
+
+
 @router.callback_query(F.data.startswith(prefix("buy:")))
 async def choose_plan(
     callback: CallbackQuery,
     db: AsyncSession,
     user: User | None,
-    bot: Bot,
 ) -> None:
-    parts = unpack(callback.data, 3)
+    parts = unpack(callback.data, 4)
     if parts is None or parts[0] != "buy":
         await safe_callback_answer(callback, "Кнопка устарела.")
         return
     if user is None:
         await safe_callback_answer(callback, "Сначала отправьте /start.")
-        return
-    if callback.message is None:
-        await safe_callback_answer(callback)
         return
     if not services.payments_available():
         await safe_callback_answer(callback)
@@ -382,18 +408,20 @@ async def choose_plan(
             callback, texts.plan_payment_unavailable_text(), back_menu_keyboard("subscription")
         )
         return
-    plan_view = next(
-        (p for p in await services.plan_views(db) if p.code == parts[2]),
-        None,
-    )
-    if plan_view is None:
-        await safe_callback_answer(callback, "Тариф не найден. Откройте /buy.", show_alert=True)
+    try:
+        months = int(parts[3])
+        preview = await services.purchase_preview(db, user, parts[2], months=months)
+    except (ValueError, AppError) as exc:
+        await safe_callback_answer(callback, str(exc), show_alert=True)
+        return
+    if not preview["can_buy"]:
+        await safe_callback_answer(callback, preview["reason"], show_alert=True)
         return
     await safe_callback_answer(callback)
     await show_screen(
         callback,
-        texts.plan_details_text(plan_view),
-        payment_method_keyboard(plan_view.code, plan_view.stars_amount or 0),
+        texts.plan_details_text(preview),
+        payment_method_keyboard(parts[2], preview["charge_stars"], months=months),
     )
 
 
@@ -404,8 +432,8 @@ async def choose_stars_plan(
     user: User | None,
     bot: Bot,
 ) -> None:
-    """Third step: send a Telegram Stars invoice for the selected plan."""
-    parts = unpack(callback.data, 3)
+    """Final step: send a Telegram Stars invoice for the selected plan and term."""
+    parts = unpack(callback.data, 4)
     if parts is None or parts[0] != "buystars":
         await safe_callback_answer(callback, "Кнопка устарела.")
         return
@@ -415,8 +443,12 @@ async def choose_stars_plan(
     if callback.message is None:
         await safe_callback_answer(callback)
         return
+    preview = await services.purchase_preview(db, user, parts[2], months=int(parts[3]))
+    if not preview["can_buy"]:
+        await safe_callback_answer(callback, preview["reason"], show_alert=True)
+        return
     try:
-        order, plan = await services.prepare_stars_order(db, user, parts[2])
+        order, plan = await services.prepare_stars_order(db, user, parts[2], months=int(parts[3]))
     except AppError as exc:
         await safe_callback_answer(callback, exc.message, show_alert=True)
         return
@@ -428,8 +460,11 @@ async def choose_stars_plan(
         return
     await bot.send_invoice(
         chat_id=callback.message.chat.id,
-        title=f"Zooffer {plan.name}",
-        description=plan.description[:255],
+        title=plan.name,
+        description=(
+            f"{plan.description[:200]} · {int(parts[3])} мес. "
+            f"({preview['total_days']} дней с учётом текущей подписки)"
+        )[:255],
         payload=f"stars:{order.id}",
         provider_token="",
         currency="XTR",
@@ -443,8 +478,8 @@ async def choose_crypto_plan(
     db: AsyncSession,
     user: User | None,
 ) -> None:
-    """Third step: show wallet details for an off-chain crypto transfer."""
-    parts = unpack(callback.data, 3)
+    """Final step: show wallet details for an off-chain crypto transfer."""
+    parts = unpack(callback.data, 4)
     if parts is None or parts[0] != "buycrypto":
         await safe_callback_answer(callback, "Кнопка устарела.")
         return
@@ -456,7 +491,7 @@ async def choose_crypto_plan(
         await safe_callback_answer(callback)
         return
     try:
-        order, plan = await services.prepare_crypto_order(db, user, plan_code)
+        order, plan = await services.prepare_crypto_order(db, user, plan_code, months=int(parts[3]))
     except AppError as exc:
         await safe_callback_answer(callback, exc.message, show_alert=True)
         return

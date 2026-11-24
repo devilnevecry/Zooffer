@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from html import escape
 from zoneinfo import ZoneInfo
 
-from zooffer.schemas.account import PlanView, SubscriptionView
+from zooffer.schemas.account import SubscriptionView
 from zooffer.schemas.messaging import ConversationSummaryView
 from zooffer.schemas.public import PublicListingCardView, PublicListingView
 
@@ -349,23 +349,40 @@ def subscription_text(subscription: SubscriptionView) -> str:
     )
 
 
-def plan_details_text(plan: PlanView) -> str:
-    features = [
-        "• " + escape(ENTITLEMENT_LABELS.get(code, code.replace("_", " ")))
-        for code in plan.entitlements
-    ] or ["• Базовый доступ"]
-    price = f"{plan.stars_amount} ★" if plan.stars_amount else f"{plan.price_kopecks / 100:,.0f} ₽"
-    price = price.replace(",", " ")
+def duration_text(name: str, description: str) -> str:
     return "\n\n".join(
         [
-            "<b>Выбранный тариф</b>",
-            f"<b>{escape(plan.name)}</b>\n{escape(plan.description)}",
-            "<b>Что даёт:</b>\n" + "\n".join(features),
-            f"<b>Условия:</b> {plan.period_days} дней · {price}. "
-            "Неиспользованные дни старого тарифа при апгрейде переходят в новый.",
-            "Выберите способ оплаты 👇",
+            "<b>Срок подписки</b>",
+            f"<b>{escape(name)}</b>\n{escape(description)}",
+            "Выберите, на какой срок оформляем. Чем длиннее срок — тем выгоднее.",
         ]
     )
+
+
+def plan_details_text(preview: dict) -> str:
+    features = [
+        "• " + escape(ENTITLEMENT_LABELS.get(code, code.replace("_", " ")))
+        for code in preview["entitlements"]
+    ] or ["• Базовый доступ"]
+    months = int(preview["months"])
+    charge = int(preview["charge_stars"])
+    base = int(preview["base_stars"])
+    credit = int(preview["credit_stars"])
+    current = preview.get("current_plan")
+    lines = [
+        "<b>Подтверждение тарифа</b>",
+        f"<b>{escape(preview['plan_name'])}</b> · {months} мес.",
+        "<b>Что вы получите:</b>\n" + "\n".join(features),
+        f"<b>Срок:</b> {preview['plan_days']} дней"
+        + (f" + {preview['unused_days']} неиспользованных дней" if preview["upgrade"] else ""),
+        f"<b>Итого доступа:</b> {preview['total_days']} дней",
+    ]
+    if current:
+        lines.append(f"<b>Сейчас у вас:</b> {escape(current)}")
+    if preview["upgrade"] and credit:
+        lines.append(f"Скидка за оставшиеся дни: −{credit}★")
+    lines.append(f"<b>К оплате:</b> {charge}★" + (f" (было {base}★)" if credit else ""))
+    return "\n\n".join(lines) + "\n\nВыберите способ оплаты 👇"
 
 
 def crypto_payment_text(

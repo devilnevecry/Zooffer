@@ -106,9 +106,12 @@ class PurchaseTerms:
     remaining_seconds: int
     from_plan_code: str | None
     upgraded: bool
+    months: int = 1
+    plan_days: int = 30
 
     def metadata(self) -> dict[str, Any]:
         return {
+            "months": self.months,
             "upgrade_from_plan": self.from_plan_code or "",
             "upgrade_remaining_seconds": self.remaining_seconds if self.upgraded else 0,
             "upgrade_credit_kopecks": self.credit_kopecks,
@@ -116,7 +119,9 @@ class PurchaseTerms:
         }
 
 
-async def _purchase_terms(db: AsyncSession, user: User, plan: Plan) -> PurchaseTerms:
+async def _purchase_terms(
+    db: AsyncSession, user: User, plan: Plan, *, months: int = 1
+) -> PurchaseTerms:
     """Calculate the price of ``plan`` for ``user``.
 
     When an active subscriber upgrades to a strictly more expensive plan, the
@@ -126,8 +131,9 @@ async def _purchase_terms(db: AsyncSession, user: User, plan: Plan) -> PurchaseT
     billing unit must always be charged.
     """
     now = utcnow()
-    base_kopecks = plan.price_kopecks
-    base_stars = plan.stars_amount
+    base_kopecks = plan.price_kopecks * months
+    base_stars = (plan.stars_amount or 0) * months or None
+    plan_days = plan.period_days * months
     row = (
         await db.execute(
             select(Subscription, Plan)
@@ -143,19 +149,26 @@ async def _purchase_terms(db: AsyncSession, user: User, plan: Plan) -> PurchaseT
         )
     ).first()
     if row is None:
-        return PurchaseTerms(base_kopecks, base_stars, 0, 0, 0, None, False)
+        return PurchaseTerms(base_kopecks, base_stars, 0, 0, 0, None, False, months, plan_days)
     subscription, old_plan = row
     if old_plan.id == plan.id or old_plan.period_days <= 0:
-        return PurchaseTerms(base_kopecks, base_stars, 0, 0, 0, None, False)
+        return PurchaseTerms(base_kopecks, base_stars, 0, 0, 0, None, False, months, plan_days)
     old_rate_kopecks = old_plan.price_kopecks / old_plan.period_days
     new_rate_kopecks = base_kopecks / plan.period_days
     old_rate_stars = (old_plan.stars_amount or 0) / old_plan.period_days
     new_rate_stars = (base_stars or 0) / plan.period_days
     if new_rate_kopecks <= old_rate_kopecks and new_rate_stars <= old_rate_stars:
-        return PurchaseTerms(base_kopecks, base_stars, 0, 0, 0, old_plan.code, False)
+        return PurchaseTerms(
+            base_kopecks, base_stars, 0, 0, 0, old_plan.code, False, months, plan_days
+        )
+    old_total_days = (
+        (subscription.current_period_end - subscription.current_period_start).days
+        if subscription.current_period_start is not None
+        else old_plan.period_days
+    )
     remaining_seconds = min(
         max(0, int((subscription.current_period_end - now).total_seconds())),
-        old_plan.period_days * 86400,
+        max(old_plan.period_days, old_total_days) * 86400,
     )
     days = remaining_seconds / 86400
     credit_kopecks = min(round(days * old_rate_kopecks), max(0, base_kopecks - 1))
@@ -168,7 +181,62 @@ async def _purchase_terms(db: AsyncSession, user: User, plan: Plan) -> PurchaseT
         remaining_seconds=remaining_seconds,
         from_plan_code=old_plan.code,
         upgraded=True,
+        months=months,
+        plan_days=plan_days,
     )
+
+
+async def purchase_preview(
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
+) -> dict[str, Any]:
+    """What the user actually gets: price, credit, term and eligibility."""
+    plan = await _plan(db, plan_code)
+    terms = await _purchase_terms(db, user, plan, months=months)
+    now = utcnow()
+    row = (
+        await db.execute(
+            select(Subscription, Plan)
+            .join(Plan, Plan.id == Subscription.plan_id)
+            .where(
+                Subscription.user_id == user.id,
+                Subscription.status.in_(["active", "past_due"]),
+                Subscription.current_period_end.is_not(None),
+                Subscription.current_period_end > now,
+            )
+            .order_by(Subscription.created_at.desc())
+            .limit(1)
+        )
+    ).first()
+    can_buy = True
+    reason = ""
+    current_name: str | None = None
+    if row is not None:
+        _subscription, old_plan = row
+        current_name = old_plan.name
+        new_rate = (plan.price_kopecks or 0) / plan.period_days
+        old_rate = (old_plan.price_kopecks or 0) / old_plan.period_days
+        if old_plan.id == plan.id:
+            can_buy, reason = False, "У вас уже этот тариф — можно продлить его на другой срок."
+        elif new_rate <= old_rate:
+            can_buy = False
+            reason = f"У вас уже «{old_plan.name}» — этот тариф слабее."
+    unused_days = -(-terms.remaining_seconds // 86400) if terms.upgraded else 0
+    return {
+        "can_buy": can_buy,
+        "reason": reason,
+        "current_plan": current_name,
+        "plan_name": plan.name,
+        "description": plan.description,
+        "entitlements": list(plan.entitlements or []),
+        "months": months,
+        "plan_days": terms.plan_days,
+        "unused_days": int(unused_days),
+        "total_days": terms.plan_days + int(unused_days),
+        "base_stars": (plan.stars_amount or 0) * months,
+        "charge_stars": terms.stars_amount or 0,
+        "credit_stars": terms.credit_stars,
+        "upgrade": terms.upgraded,
+    }
 
 
 async def _expire_pending_orders(db: AsyncSession, user_id: UUID, now: datetime) -> None:
@@ -204,7 +272,9 @@ def _return_url(order_id: UUID) -> str:
     return f"{base}/account/subscription/checkout?order={order_id}"
 
 
-async def create_order(db: AsyncSession, user: User, plan_code: str) -> BillingOrderView:
+async def create_order(
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
+) -> BillingOrderView:
     if not payments_available():
         raise ValidationAppError(
             "Онлайн-оплата пока недоступна. Попробуйте позже или напишите в поддержку.",
@@ -232,13 +302,14 @@ async def create_order(db: AsyncSession, user: User, plan_code: str) -> BillingO
             PaymentOrder.status.in_(["created", "pending"]),
             PaymentOrder.created_at >= now - timedelta(minutes=REUSE_ORDER_MINUTES),
             PaymentOrder.confirmation_url.is_not(None),
+            func.coalesce(PaymentOrder.raw_metadata["months"].astext, "1") == str(months),
         )
         .order_by(PaymentOrder.created_at.desc())
         .limit(1)
     )
     if recent is not None:
         return await order_view(db, recent)
-    terms = await _purchase_terms(db, user, plan)
+    terms = await _purchase_terms(db, user, plan, months=months)
     await _expire_pending_orders(db, user.id, now)
     provider = get_payment_provider()
     order_id = uuid4()
@@ -320,7 +391,7 @@ async def _stars_plan(db: AsyncSession, plan_code: str) -> Plan:
 
 
 async def prepare_stars_order(
-    db: AsyncSession, user: User, plan_code: str
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
 ) -> tuple[PaymentOrder, Plan]:
     """Create (or reuse) a pending Stars order. The invoice is sent separately.
 
@@ -339,13 +410,14 @@ async def prepare_stars_order(
             PaymentOrder.status.in_(["created", "pending"]),
             PaymentOrder.created_at >= now - timedelta(minutes=REUSE_ORDER_MINUTES),
             PaymentOrder.expires_at.is_(None) | (PaymentOrder.expires_at > now),
+            func.coalesce(PaymentOrder.raw_metadata["months"].astext, "1") == str(months),
         )
         .order_by(PaymentOrder.created_at.desc())
         .limit(1)
     )
     if recent is not None:
         return recent, plan
-    terms = await _purchase_terms(db, user, plan)
+    terms = await _purchase_terms(db, user, plan, months=months)
     await _expire_pending_orders(db, user.id, now)
     order = PaymentOrder(
         id=uuid4(),
@@ -368,7 +440,7 @@ async def prepare_stars_order(
 
 
 async def prepare_crypto_order(
-    db: AsyncSession, user: User, plan_code: str
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
 ) -> tuple[PaymentOrder, Plan]:
     """Create (or reuse) a pending crypto wallet payment order.
 
@@ -393,13 +465,14 @@ async def prepare_crypto_order(
             PaymentOrder.status.in_(["created", "pending"]),
             PaymentOrder.created_at >= now - timedelta(minutes=REUSE_ORDER_MINUTES),
             PaymentOrder.expires_at.is_(None) | (PaymentOrder.expires_at > now),
+            func.coalesce(PaymentOrder.raw_metadata["months"].astext, "1") == str(months),
         )
         .order_by(PaymentOrder.created_at.desc())
         .limit(1)
     )
     if recent is not None:
         return recent, plan
-    terms = await _purchase_terms(db, user, plan)
+    terms = await _purchase_terms(db, user, plan, months=months)
     await _expire_pending_orders(db, user.id, now)
     provider = get_payment_provider("crypto")
     order_id = uuid4()
@@ -433,8 +506,10 @@ async def prepare_crypto_order(
     return order, plan
 
 
-async def create_stars_invoice(db: AsyncSession, user: User, plan_code: str) -> StarsInvoiceView:
-    order, plan = await prepare_stars_order(db, user, plan_code)
+async def create_stars_invoice(
+    db: AsyncSession, user: User, plan_code: str, *, months: int = 1
+) -> StarsInvoiceView:
+    order, plan = await prepare_stars_order(db, user, plan_code, months=months)
     if order.confirmation_url:
         return StarsInvoiceView(
             public_id=order.id,
@@ -799,6 +874,8 @@ async def _activate_subscription(
     upgraded = upgrade_seconds > 0
     if upgraded:
         base = now + timedelta(seconds=upgrade_seconds)
+    purchase_months = int((order.raw_metadata or {}).get("months") or 1)
+    period_days = plan.period_days * purchase_months
     if subscription is None:
         subscription = Subscription(
             id=uuid4(),
@@ -808,7 +885,7 @@ async def _activate_subscription(
             provider=order.provider,
             provider_subscription_id=event.provider_subscription_id,
             current_period_start=now,
-            current_period_end=base + timedelta(days=plan.period_days),
+            current_period_end=base + timedelta(days=period_days),
         )
         db.add(subscription)
     else:
@@ -825,7 +902,7 @@ async def _activate_subscription(
             if subscription.current_period_end is not None and subscription.current_period_end > now
             else now
         )
-        subscription.current_period_end = base + timedelta(days=plan.period_days)
+        subscription.current_period_end = base + timedelta(days=period_days)
         subscription.cancel_at_period_end = False
         subscription.canceled_at = None
         subscription.grace_until = None

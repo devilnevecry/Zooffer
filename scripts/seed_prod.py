@@ -50,7 +50,7 @@ PLAN_SPECS: list[dict[str, object]] = [
     },
     {
         "code": "plus",
-        "name": "Zooffer Plus",
+        "name": "Plus",
         "description": "Безлимитные свайпы, отмена последнего свайпа и расширенная галерея.",
         "price_kopecks": 29900,
         "stars_amount": 1,
@@ -60,7 +60,7 @@ PLAN_SPECS: list[dict[str, object]] = [
     },
     {
         "code": "premium",
-        "name": "Zooffer Premium",
+        "name": "Premium",
         "description": "Всё из Plus, приоритетная модерация и продвижение объявлений.",
         "price_kopecks": 59900,
         "stars_amount": 1,
