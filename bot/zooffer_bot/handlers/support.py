@@ -13,17 +13,21 @@ from ..callbacks import prefix, unpack
 from ..config import BotConfig
 from ..keyboards import support_cancel
 from ..states import SupportFlow
-from .common import ensure_onboarded, safe_callback_answer
+from .common import ensure_onboarded, replace_message, safe_callback_answer
 
 router = Router(name="support")
 
 
-async def begin_support(message: Message, state: FSMContext) -> None:
+async def begin_support(message: Message, state: FSMContext, *, edit: bool = False) -> None:
     await state.clear()
     await state.set_state(SupportFlow.subject)
     await state.update_data(support_subject=None)
-    await message.answer(texts.support_intro_text())
-    await message.answer(texts.support_subject_prompt(), reply_markup=support_cancel())
+    text = f"{texts.support_intro_text()}\n\n{texts.support_subject_prompt()}"
+    if edit:
+        await replace_message(message, text, support_cancel())
+    else:
+        await message.answer(texts.support_intro_text())
+        await message.answer(texts.support_subject_prompt(), reply_markup=support_cancel())
 
 
 @router.message(Command("support"))
@@ -97,5 +101,4 @@ async def support_cancel_callback(callback: CallbackQuery, state: FSMContext) ->
     await state.clear()
     await safe_callback_answer(callback, "Отменено")
     if callback.message is not None:
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(texts.support_cancelled_text())
+        await replace_message(callback.message, texts.support_cancelled_text())

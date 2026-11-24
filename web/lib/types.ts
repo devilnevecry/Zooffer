@@ -382,6 +382,24 @@ export interface StarsInvoice {
   expires_at: string | null;
 }
 
+export interface PurchasePreview {
+  can_buy: boolean;
+  reason: string;
+  current_plan: string | null;
+  plan_name: string;
+  description: string;
+  entitlements: string[];
+  months: number;
+  plan_days: number;
+  unused_days: number;
+  total_days: number;
+  base_stars: number;
+  charge_stars: number;
+  credit_stars: number;
+  upgrade: boolean;
+  renewal: boolean;
+}
+
 export interface TelegramLoginPayload {
   id: number;
   first_name?: string;

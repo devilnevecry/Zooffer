@@ -33,7 +33,7 @@ from ..keyboards import (
     species_keyboard,
 )
 from ..states import ListingWizard
-from .common import ensure_onboarded, safe_callback_answer
+from .common import ensure_onboarded, replace_message, safe_callback_answer
 
 router = Router(name="listings")
 
@@ -85,7 +85,9 @@ async def begin_wizard(message: Message, state: FSMContext) -> None:
     await message.answer(texts.wizard_species_text(), reply_markup=species_keyboard())
 
 
-async def show_listings(message: Message, db: AsyncSession, user: User, config: BotConfig) -> None:
+async def show_listings(
+    message: Message, db: AsyncSession, user: User, config: BotConfig, *, edit: bool = False
+) -> None:
     rows = await services.owned_listings(db, user)
     labels = [
         (
@@ -94,10 +96,12 @@ async def show_listings(message: Message, db: AsyncSession, user: User, config: 
         )
         for listing, animal, _has_photo in rows
     ]
-    await message.answer(
-        texts.my_listings_text(len(rows)),
-        reply_markup=listings_keyboard(labels),
-    )
+    text = texts.my_listings_text(len(rows))
+    markup = listings_keyboard(labels)
+    if edit:
+        await replace_message(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
 
 
 async def _send_owner_listing(
@@ -105,14 +109,16 @@ async def _send_owner_listing(
     db: AsyncSession,
     user: User,
     listing_public_id: UUID,
+    *,
+    edit: bool = False,
 ) -> None:
     listing, animal, has_photo = await services.owned_listing(db, user, listing_public_id)
-    await message.answer(
-        texts.owner_listing_text(listing, animal, has_photo),
-        reply_markup=listing_actions_keyboard(
-            str(listing.public_id), listing.status, has_photos=has_photo
-        ),
-    )
+    text = texts.owner_listing_text(listing, animal, has_photo)
+    markup = listing_actions_keyboard(str(listing.public_id), listing.status, has_photos=has_photo)
+    if edit:
+        await replace_message(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
 
 
 @router.message(Command("mylistings"))
@@ -617,7 +623,7 @@ async def listing_callback(
     try:
         if action == "open":
             await safe_callback_answer(callback)
-            await _send_owner_listing(callback.message, db, user, listing_public_id)
+            await _send_owner_listing(callback.message, db, user, listing_public_id, edit=True)
             return
         if action == "photo":
             listing, animal, _has_photo = await services.owned_listing(db, user, listing_public_id)
@@ -657,17 +663,17 @@ async def listing_callback(
         if action == "pause":
             await services.pause_listing(db, user, listing_public_id)
             await safe_callback_answer(callback, "Приостановлено")
-            await _send_owner_listing(callback.message, db, user, listing_public_id)
+            await _send_owner_listing(callback.message, db, user, listing_public_id, edit=True)
             return
         if action == "sold":
             await services.mark_sold(db, user, listing_public_id)
             await safe_callback_answer(callback, "Отмечено как переданное")
-            await _send_owner_listing(callback.message, db, user, listing_public_id)
+            await _send_owner_listing(callback.message, db, user, listing_public_id, edit=True)
             return
         if action == "archive":
             await services.archive_listing(db, user, listing_public_id)
             await safe_callback_answer(callback, "В архиве")
-            await _send_owner_listing(callback.message, db, user, listing_public_id)
+            await _send_owner_listing(callback.message, db, user, listing_public_id, edit=True)
             return
     except AppError as exc:
         await safe_callback_answer(callback, exc.message, show_alert=True)

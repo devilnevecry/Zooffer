@@ -14,7 +14,7 @@ from ..callbacks import prefix, unpack
 from ..config import BotConfig
 from ..keyboards import chat_keyboard, chats_keyboard
 from ..states import ChatFlow
-from .common import ensure_onboarded, safe_callback_answer
+from .common import ensure_onboarded, replace_message, safe_callback_answer
 
 router = Router(name="chats")
 
@@ -29,6 +29,8 @@ async def show_chats(
     db: AsyncSession,
     user: User,
     config: BotConfig,
+    *,
+    edit: bool = False,
 ) -> None:
     listing = await services.conversations(db, user)
     labels: list[tuple[str, str]] = []
@@ -39,10 +41,12 @@ async def show_chats(
         if item.unread_count:
             name = f"{name} ({item.unread_count})"
         labels.append((str(item.public_id), name))
-    await message.answer(
-        texts.chats_text(len(listing.items)),
-        reply_markup=chats_keyboard(labels),
-    )
+    text = texts.chats_text(len(listing.items))
+    markup = chats_keyboard(labels)
+    if edit:
+        await replace_message(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
 
 
 async def _open_conversation(
@@ -53,17 +57,20 @@ async def _open_conversation(
     conversation_public_id,
     *,
     prompt: bool = False,
+    edit: bool = False,
 ) -> None:
     detail = await services.conversation(db, user, conversation_public_id)
     await services.mark_conversation_read(db, user, conversation_public_id)
     await state.set_state(ChatFlow.writing)
     await state.update_data(conversation_public_id=str(conversation_public_id))
-    await message.answer(
-        _conversation_text(detail),
-        reply_markup=chat_keyboard(str(conversation_public_id)),
-    )
+    text = _conversation_text(detail)
     if prompt:
-        await message.answer("Напишите сообщение одним текстом. /cancel — выйти.")
+        text += "\n\nНапишите сообщение одним текстом. /cancel — выйти."
+    markup = chat_keyboard(str(conversation_public_id))
+    if edit:
+        await replace_message(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
 
 
 @router.message(Command("chats"))
@@ -120,6 +127,7 @@ async def chat_callback(
             user,
             detail.conversation.public_id,
             prompt=True,
+            edit=True,
         )
         return
 
@@ -134,6 +142,7 @@ async def chat_callback(
             user,
             conversation_public_id,
             prompt=action == "reply",
+            edit=True,
         )
     except AppError as exc:
         await safe_callback_answer(callback, exc.message, show_alert=True)

@@ -31,6 +31,7 @@ class BotConfig:
     notification_interval_seconds: int
     notification_batch_size: int
     notification_max_age_hours: int
+    reminder_check_interval_seconds: int
 
 
 def load_config() -> BotConfig:
@@ -62,6 +63,9 @@ def load_config() -> BotConfig:
         notification_interval_seconds=int(os.getenv("BOT_NOTIFICATION_INTERVAL", "15")),
         notification_batch_size=int(os.getenv("BOT_NOTIFICATION_BATCH", "20")),
         notification_max_age_hours=int(os.getenv("BOT_NOTIFICATION_MAX_AGE_HOURS", "24")),
+        reminder_check_interval_seconds=int(
+            os.getenv("BOT_REMINDER_CHECK_INTERVAL_SECONDS", "3600")
+        ),
     )
 
 

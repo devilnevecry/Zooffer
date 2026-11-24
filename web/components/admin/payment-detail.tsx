@@ -53,6 +53,28 @@ export function PaymentDetail({ initial }: { initial: AdminPaymentDetail }) {
     }
   };
 
+  const confirmCrypto = async () => {
+    if (!window.confirm("Подтвердить поступление крипты и активировать подписку?")) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await api<AdminPaymentDetail>(
+        `/api/v1/admin/payments/${order.public_id}/confirm`,
+        { method: "POST" },
+      );
+      setDetail(updated);
+      showToast("Оплата подтверждена, подписка активирована", "success");
+    } catch (err) {
+      showToast(
+        err instanceof ClientApiError ? err.message : "Не удалось подтвердить оплату",
+        "error",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <>
       <div className="account-head">
@@ -101,6 +123,32 @@ export function PaymentDetail({ initial }: { initial: AdminPaymentDetail }) {
         {order.demo && (
           <p className="tg-hint">Демонстрационный заказ. Реальных списаний по нему не было.</p>
         )}
+
+        {order.provider === "crypto" &&
+          (order.status === "pending" || order.status === "created") && (
+            <div className="admin-refund">
+              {canWrite ? (
+                <>
+                  <p className="muted small">
+                    Проверьте поступление на кошелёк, затем подтвердите платёж. Пользователь получит
+                    подписку сразу после подтверждения.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={busy}
+                    onClick={() => void confirmCrypto()}
+                  >
+                    {busy ? "Подтверждаем…" : "Подтвердить крипто-оплату"}
+                  </button>
+                </>
+              ) : (
+                <p className="muted small">
+                  Подтверждение доступно только суперадминистратору с подтверждённой 2FA.
+                </p>
+              )}
+            </div>
+          )}
 
         {order.status === "paid" && (
           <div className="admin-refund">

@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import contextlib
-
 from aiogram import F, Router
-from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -15,7 +12,7 @@ from .. import services, texts
 from ..callbacks import prefix, unpack
 from ..config import BotConfig
 from ..keyboards import favorites_keyboard
-from .common import ensure_onboarded, safe_callback_answer
+from .common import ensure_onboarded, replace_message, safe_callback_answer
 
 router = Router(name="favorites")
 
@@ -25,13 +22,17 @@ async def show_favorites(
     db: AsyncSession,
     user: User,
     config: BotConfig,
+    *,
+    edit: bool = False,
 ) -> None:
     items = await services.favorites(db, user)
     labels = [(str(listing.public_id), animal.name or listing.title) for listing, animal in items]
-    await message.answer(
-        texts.favorites_text(len(items)),
-        reply_markup=favorites_keyboard(labels),
-    )
+    text = texts.favorites_text(len(items))
+    markup = favorites_keyboard(labels)
+    if edit:
+        await replace_message(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
 
 
 @router.message(Command("favorites"))
@@ -78,6 +79,4 @@ async def favorite_callback(
         return
     await safe_callback_answer(callback, "Удалено из избранного")
     if callback.message is not None:
-        with contextlib.suppress(TelegramBadRequest):
-            await callback.message.edit_reply_markup(reply_markup=None)
-        await show_favorites(callback.message, db, user)
+        await show_favorites(callback.message, db, user, config, edit=True)

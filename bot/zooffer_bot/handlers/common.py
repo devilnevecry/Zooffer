@@ -5,7 +5,7 @@ from html import escape
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from zooffer.db.models import User
 from zooffer.schemas.public import PublicListingCardView
@@ -109,6 +109,33 @@ async def ensure_onboarded(message: Message, user: User | None, state, config: B
         reply_markup=consent_keyboard(),
     )
     return False
+
+
+async def replace_message(
+    message: Message,
+    text: str,
+    reply_markup: InlineKeyboardMarkup | None = None,
+    *,
+    photo: str | None = None,
+) -> None:
+    """Edit a message in place; fall back to a new message if editing is impossible."""
+    try:
+        if photo and photo_url_usable(photo):
+            await message.edit_media(
+                InputMediaPhoto(media=photo, caption=text), reply_markup=reply_markup
+            )
+        elif message.photo:
+            await message.edit_caption(caption=text, reply_markup=reply_markup)
+        else:
+            await message.edit_text(text=text, reply_markup=reply_markup)
+        return
+    except TelegramBadRequest:
+        pass
+    if photo and photo_url_usable(photo):
+        with contextlib.suppress(TelegramBadRequest):
+            await message.answer_photo(photo=photo, caption=text, reply_markup=reply_markup)
+            return
+    await message.answer(text, reply_markup=reply_markup)
 
 
 async def show_screen(

@@ -26,7 +26,7 @@ from ..keyboards import (
     subscription_keyboard,
     swipe_keyboard,
 )
-from .common import ensure_onboarded, safe_callback_answer, send_listing_card
+from .common import ensure_onboarded, replace_message, safe_callback_answer, send_listing_card
 
 router = Router(name="discovery")
 
@@ -37,20 +37,36 @@ async def show_next_listing(
     db: AsyncSession,
     user: User,
     config: BotConfig,
+    *,
+    edit: bool = False,
 ) -> None:
     await state.clear()
     items, remaining, unlimited = await services.next_feed_item(db, user)
     if not items:
-        await message.answer(texts.no_new_listings_text(), reply_markup=next_keyboard())
+        text = texts.no_new_listings_text()
+        if edit:
+            await replace_message(message, text, next_keyboard())
+        else:
+            await message.answer(text, reply_markup=next_keyboard())
         return
     item = items[0]
+    markup = swipe_keyboard(str(item.public_id))
+    if edit:
+        photo = item.primary_photo.url if item.primary_photo else None
+        await replace_message(
+            message,
+            texts.listing_card_text(item, remaining, unlimited),
+            markup,
+            photo=photo,
+        )
+        return
     await send_listing_card(
         message.bot,
         message.chat.id,
         item,
         remaining=remaining,
         unlimited=unlimited,
-        reply_markup=swipe_keyboard(str(item.public_id)),
+        reply_markup=markup,
     )
 
 
@@ -118,9 +134,10 @@ async def swipe_callback(
         if isinstance(exc.details, dict):
             reset_at = exc.details.get("resets_at")
         await safe_callback_answer(callback, exc.message, show_alert=True)
-        await callback.message.answer(
+        await replace_message(
+            callback.message,
             texts.quota_exceeded_text(str(reset_at) if reset_at else None),
-            reply_markup=subscription_keyboard(True),
+            subscription_keyboard(True),
         )
         return
     except ConflictError as exc:
@@ -139,10 +156,11 @@ async def swipe_callback(
     await state.clear()
     if result.match_created and result.conversation_public_id is not None:
         await safe_callback_answer(callback, "Взаимная симпатия")
-        await callback.message.answer(
+        await replace_message(
+            callback.message,
             texts.match_text(),
-            reply_markup=match_keyboard(str(result.conversation_public_id)),
+            match_keyboard(str(result.conversation_public_id)),
         )
         return
     await safe_callback_answer(callback, "Лайк отправлен" if action == "like" else "Пропущено")
-    await show_next_listing(callback.message, state, db, user, config)
+    await show_next_listing(callback.message, state, db, user, config, edit=True)

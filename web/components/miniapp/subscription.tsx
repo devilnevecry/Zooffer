@@ -31,11 +31,11 @@ export function MiniSubscription() {
   const showToast = useToast();
 
   const buyStars = useCallback(
-    async (planCode: string) => {
+    async (planCode: string, months: number) => {
       try {
         const invoice = await api<StarsInvoice>("/api/v1/billing/stars/invoice", {
           method: "POST",
-          body: { plan_code: planCode },
+          body: { plan_code: planCode, months },
         });
         const status = await openInvoice(invoice.invoice_url);
         if (status === "paid") {

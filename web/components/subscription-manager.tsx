@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CheckIcon, ShieldIcon } from "./icons";
 import { useToast } from "./toast-provider";
 import { api, ClientApiError } from "@/lib/client";
 import { formatDate, formatPrice } from "@/lib/format";
-import type { BillingOrder, Plan, SubscriptionState } from "@/lib/types";
+import type { BillingOrder, Plan, PurchasePreview, SubscriptionState } from "@/lib/types";
 
 const entitlementLabels: Record<string, string> = {
   unlimited_swipes: "♾️ Безлимитные свайпы — дневной лимит снят",
@@ -37,13 +37,47 @@ export function SubscriptionManager({
   /** Bot deep link used by the website: Stars can only be paid inside Telegram. */
   telegramUrl?: string;
   /** Mini App hook that opens a Telegram Stars invoice. */
-  onStarsInvoice?: (planCode: string) => Promise<void>;
+  onStarsInvoice?: (planCode: string, months: number) => Promise<void>;
 }) {
   const showToast = useToast();
   const router = useRouter();
   const [state, setState] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+  const [months, setMonths] = useState(1);
+  const [selected, setSelected] = useState<string | null>(
+    () => plans.find((plan) => plan.price_kopecks > 0)?.code ?? null,
+  );
+  const [previews, setPreviews] = useState<Record<string, PurchasePreview>>({});
+
+  const paidPlans = plans.filter((plan) => plan.price_kopecks > 0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const entries = await Promise.all(
+        paidPlans.map(async (plan) => {
+          try {
+            const preview = await api<PurchasePreview>(
+              "/api/v1/billing/preview?allow_renew=true",
+              { method: "POST", body: { plan_code: plan.code, months } },
+            );
+            return [plan.code, preview] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (!cancelled) {
+        setPreviews(Object.fromEntries(entries.filter((e) => e !== null) as Array<readonly [string, PurchasePreview]>));
+      }
+    }
+    if (paidPlans.length) void load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [months, plans]);
 
   const starsProvider = state.payment_provider === "telegram_stars";
   const purchaseMode = starsProvider ? (onStarsInvoice ? "stars" : "telegram") : "provider";
@@ -73,7 +107,7 @@ export function SubscriptionManager({
     }
   };
 
-  const startCheckout = async (planCode: string) => {
+  const startCheckout = async (planCode: string, termMonths: number) => {
     if (purchaseMode === "telegram") {
       // Digital goods cannot be sold by an external card link inside Telegram,
       // and the website cannot charge Stars: hand the user over to the bot.
@@ -83,12 +117,12 @@ export function SubscriptionManager({
     setPaying(planCode);
     try {
       if (purchaseMode === "stars" && onStarsInvoice) {
-        await onStarsInvoice(planCode);
+        await onStarsInvoice(planCode, termMonths);
         return;
       }
       const order = await api<BillingOrder>("/api/v1/billing/orders", {
         method: "POST",
-        body: { plan_code: planCode },
+        body: { plan_code: planCode, months: termMonths },
       });
       if (order.provider !== "fake" && order.confirmation_url) {
         window.location.assign(order.confirmation_url);
@@ -164,6 +198,75 @@ export function SubscriptionManager({
         </div>
       )}
 
+      <section className="section purchase-setup">
+        <div className="section-head">
+          <div>
+            <span className="eyebrow">Шаг 1</span>
+            <h2>Срок подписки</h2>
+            <p>Выберите срок — покажем точную цену и сколько дней получите.</p>
+          </div>
+        </div>
+        <div className="tg-plan-months" role="group" aria-label="Срок подписки">
+          {[1, 3, 6, 12].map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={`chip ${months === value ? "chip-brand" : ""}`}
+              onClick={() => setMonths(value)}
+            >
+              {value} мес.
+            </button>
+          ))}
+        </div>
+        {selected && previews[selected] && (
+          <div className="tg-preview-card">
+            <div className="tg-preview-head">
+              <span className="eyebrow">Шаг 2 · ваш выбор</span>
+              <h3>{previews[selected].plan_name}</h3>
+            </div>
+            <ul className="plan-list">
+              {previews[selected].entitlements.map((code) => (
+                <li key={code}>
+                  <CheckIcon width={15} height={15} />{" "}
+                  {entitlementLabels[code] ?? code.replace(/_/g, " ")}
+                </li>
+              ))}
+            </ul>
+            <div className="tg-preview-total">
+              <span>
+                {previews[selected].plan_days} дней
+                {previews[selected].unused_days > 0 &&
+                  ` + ${previews[selected].unused_days} оставшихся`}
+              </span>
+              <strong>
+                {previews[selected].charge_stars}★
+                {previews[selected].credit_stars > 0 && (
+                  <small> вместо {previews[selected].base_stars}★</small>
+                )}
+              </strong>
+            </div>
+            {previews[selected].renewal && (
+              <p className="muted small">Продление: дни добавляются к текущему сроку.</p>
+            )}
+            {!previews[selected].can_buy && (
+              <p className="notice warn">{previews[selected].reason}</p>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={
+                !previews[selected].can_buy || !state.payments_available || paying !== null
+              }
+              onClick={() => void startCheckout(selected, months)}
+            >
+              {paying === selected
+                ? "Создаём счёт…"
+                : `Оплатить ${previews[selected].charge_stars}★ · ${previews[selected].total_days} дней`}
+            </button>
+          </div>
+        )}
+      </section>
+
       <section className="section">
         <div className="section-head">
           <div>
@@ -203,23 +306,25 @@ export function SubscriptionManager({
           {plans
             .filter((plan) => plan.price_kopecks > 0)
             .map((plan) => {
-              const current = state.plan_code === plan.code && active;
+              const preview = previews[plan.code];
+              const canBuy = preview?.can_buy ?? false;
               return (
-                <article className="plan-card featured" key={plan.code}>
+                <article
+                  className={`plan-card featured${selected === plan.code ? " selected" : ""}`}
+                  key={plan.code}
+                >
                   {plan.is_placeholder_price && <span className="plan-flag">Цена до запуска</span>}
                   <h3>{plan.name}</h3>
                   <p className="plan-price">
-                    {starsProvider && plan.stars_amount
-                      ? `${plan.stars_amount} ★`
-                      : formatPrice(plan.price_kopecks)}
+                    {preview
+                      ? `${preview.charge_stars} ★`
+                      : starsProvider && plan.stars_amount
+                        ? `${plan.stars_amount} ★`
+                        : formatPrice(plan.price_kopecks)}
                   </p>
                   <p className="muted">
-                    за {plan.period_days} дней
-                    {starsProvider && plan.stars_amount
-                      ? " · оплата Telegram Stars"
-                      : plan.stars_amount
-                        ? ` · ${plan.stars_amount} Stars`
-                        : ""}
+                    {months} мес. · {preview?.total_days ?? plan.period_days * months} дней
+                    {preview?.credit_stars ? ` · скидка ${preview.credit_stars}★` : ""}
                   </p>
                   <p>{plan.description}</p>
                   <ul className="plan-list">
@@ -233,22 +338,14 @@ export function SubscriptionManager({
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
-                    onClick={() => void startCheckout(plan.code)}
-                    disabled={!state.payments_available || current || paying !== null}
+                    onClick={() => setSelected(plan.code)}
+                    disabled={!state.payments_available || !canBuy || paying !== null}
                   >
-                    {current
-                      ? "Подключено"
-                      : paying === plan.code
-                        ? "Создаём счёт…"
-                        : !state.payments_available
-                          ? "Оплата недоступна"
-                          : purchaseMode === "telegram"
-                            ? "Оплатить в Telegram"
-                            : purchaseMode === "stars"
-                              ? `Оплатить ${plan.stars_amount ?? ""} ★`
-                              : state.payments_demo
-                                ? "Демо-оплата"
-                                : "Перейти к оплате"}
+                    {!canBuy
+                      ? preview?.reason ?? "Недоступно"
+                      : selected === plan.code
+                        ? "Выбрано ↓"
+                        : "Выбрать тариф"}
                   </button>
                 </article>
               );

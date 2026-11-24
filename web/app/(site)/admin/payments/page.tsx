@@ -5,6 +5,7 @@ import { formatDateTime, formatPrice } from "@/lib/format";
 import type { AdminPaymentList } from "@/lib/types";
 
 const statusLabels: Record<string, string> = {
+  created: "Создан",
   pending: "Ожидает",
   paid: "Оплачен",
   canceled: "Отменён",

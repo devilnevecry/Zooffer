@@ -60,6 +60,30 @@ def listing_moderated(
     )
 
 
+def subscription_expiry_reminder(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    plan_code: str,
+    plan_name: str,
+    days_left: int,
+    renewal_url: str,
+) -> Notification:
+    """In-app + Telegram reminder with a one-tap renewal deep link."""
+    return create_notification(
+        db,
+        user_id,
+        category="subscriptions",
+        title=f"Подписка заканчивается через {days_left} дн.",
+        body=f"Тариф «{plan_name}». Продлите заранее — дни добавятся к текущему сроку.",
+        data={
+            "renewal_url": renewal_url,
+            "plan_code": plan_code,
+            "reminder_days": str(days_left),
+        },
+    )
+
+
 def support_reply(
     db: AsyncSession, *, user_id: UUID, ticket_public_id: UUID, subject: str
 ) -> Notification:

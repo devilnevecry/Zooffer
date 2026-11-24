@@ -22,10 +22,13 @@ from zooffer.db.models import (
     Notification,
     NotificationDelivery,
     NotificationPreference,
+    Plan,
+    Subscription,
     TelegramChat,
     User,
 )
 from zooffer.db.session import SessionLocal
+from zooffer.services import notification_service
 
 from .config import BotConfig
 
@@ -68,9 +71,16 @@ def _notification_text(notification: Notification) -> str:
 def _notification_keyboard(
     notification: Notification, config: BotConfig
 ) -> InlineKeyboardMarkup | None:
+    data = notification.data or {}
+    renewal_url = data.get("renewal_url")
+    if renewal_url:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="⏳ Продлить подписку", url=str(renewal_url))]
+            ]
+        )
     if not config.mini_app_url.startswith("https://"):
         return None
-    data = notification.data or {}
     conversation_id = data.get("conversation_public_id")
     listing_slug = data.get("listing_slug")
     if conversation_id:
@@ -224,12 +234,68 @@ async def run_once(
     return outcome
 
 
+async def run_subscription_reminders(db: AsyncSession, config: BotConfig) -> int:
+    """Create one 3-day and one 1-day renewal reminder per paid period."""
+    now = utcnow()
+    rows = (
+        await db.execute(
+            select(Subscription, Plan)
+            .join(Plan, Plan.id == Subscription.plan_id)
+            .where(
+                Subscription.status.in_(["active", "past_due"]),
+                Subscription.current_period_end.is_not(None),
+                Subscription.current_period_end > now,
+                Subscription.current_period_end <= now + timedelta(days=3),
+            )
+        )
+    ).all()
+    created = 0
+    for subscription, plan in rows:
+        end = subscription.current_period_end
+        assert end is not None
+        seconds_left = int((end - now).total_seconds())
+        days_left = max(1, -(-seconds_left // 86400))
+        if days_left not in (1, 3):
+            continue
+        existing = await db.scalar(
+            select(Notification.id).where(
+                Notification.user_id == subscription.user_id,
+                Notification.category == "subscriptions",
+                Notification.created_at >= now - timedelta(days=5),
+                Notification.data["reminder_days"].astext == str(days_left),
+                Notification.data["plan_code"].astext == plan.code,
+            )
+        )
+        if existing is not None:
+            continue
+        notification_service.subscription_expiry_reminder(
+            db,
+            user_id=subscription.user_id,
+            plan_code=plan.code,
+            plan_name=plan.name,
+            days_left=days_left,
+            renewal_url=f"https://t.me/{config.bot_username}?start=buy_{plan.code}",
+        )
+        created += 1
+    if created:
+        await db.commit()
+    return created
+
+
 async def run_worker(bot: Bot, config: BotConfig) -> None:
     interval = max(config.notification_interval_seconds, 5)
+    reminder_interval = max(config.reminder_check_interval_seconds, 60)
     logger.info("bot_notification_worker_started", extra={"interval": interval})
+    last_reminder_check = datetime.min.replace(tzinfo=UTC)
     while True:
         try:
             async with SessionLocal() as session:
+                current = utcnow()
+                if (current - last_reminder_check).total_seconds() >= reminder_interval:
+                    created = await run_subscription_reminders(session, config)
+                    if created:
+                        logger.info("subscription_reminders_created", extra={"count": created})
+                    last_reminder_check = current
                 outcome = await run_once(session, bot, config, limit=config.notification_batch_size)
                 if outcome.sent or outcome.deferred or outcome.failed:
                     logger.info(

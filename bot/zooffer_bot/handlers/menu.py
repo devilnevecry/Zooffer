@@ -337,19 +337,19 @@ async def menu_callbacks(
         await safe_callback_answer(callback)
         from .support import begin_support
 
-        await begin_support(callback.message, state)
+        await begin_support(callback.message, state, edit=True)
         return
     if action == "swipe":
         await safe_callback_answer(callback)
         from .discovery import show_next_listing
 
-        await show_next_listing(callback.message, state, db, user, config)
+        await show_next_listing(callback.message, state, db, user, config, edit=True)
         return
     if action == "favorites":
         await safe_callback_answer(callback)
         from .favorites import show_favorites
 
-        await show_favorites(callback.message, db, user, config)
+        await show_favorites(callback.message, db, user, config, edit=True)
         return
     if action == "chats":
         await safe_callback_answer(callback)
@@ -361,7 +361,7 @@ async def menu_callbacks(
         await safe_callback_answer(callback)
         from .listings import show_listings
 
-        await show_listings(callback.message, db, user, config)
+        await show_listings(callback.message, db, user, config, edit=True)
         return
     if action == "addpet":
         await safe_callback_answer(callback)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 import pyotp
@@ -297,6 +298,41 @@ async def test_payments_unavailable_and_plan_validation(
     missing = await client.post("/api/v1/billing/orders", json={"plan_code": "missing"})
     assert missing.status_code == 404
     assert missing.json()["error"]["code"] == "plan_not_found"
+
+
+async def test_admin_confirm_crypto_order(client: AsyncClient, db) -> None:
+    user_body = await register(client, "crypto-admin@example.com")
+    plan = await _plan(db)
+    user = await db.scalar(select(User).where(User.public_id == UUID(user_body["public_id"])))
+    assert user is not None
+    order = PaymentOrder(
+        id=uuid4(),
+        user_id=user.id,
+        plan_id=plan.id,
+        provider="crypto",
+        status="pending",
+        amount_kopecks=plan.price_kopecks,
+        currency="RUB",
+        idempotency_key="crypto:test",
+        expires_at=utcnow() + timedelta(minutes=30),
+        raw_metadata={"plan_code": plan.code},
+    )
+    db.add(order)
+    await db.commit()
+
+    setup = await client.post("/api/v1/auth/mfa/setup")
+    secret = setup.json()["secret"]
+    await client.post("/api/v1/auth/mfa/confirm", json={"code": pyotp.TOTP(secret).now()})
+    me = await client.get("/api/v1/auth/me")
+    await _set_role(db, me.json()["user"]["public_id"], "superadmin")
+
+    confirmed = await client.post(f"/api/v1/admin/payments/{order.id}/confirm")
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["order"]["status"] == "paid"
+    again = await client.post(f"/api/v1/admin/payments/{order.id}/confirm")
+    assert again.status_code == 200
+    current = await client.get("/api/v1/billing/subscription")
+    assert current.json()["status"] == "active"
 
 
 async def test_admin_payment_detail_refund_grant_and_reconcile(client: AsyncClient, db) -> None:

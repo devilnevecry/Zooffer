@@ -136,6 +136,7 @@ services:
       BOT_NOTIFICATION_INTERVAL: "15"
       BOT_NOTIFICATION_BATCH: "20"
       BOT_NOTIFICATION_MAX_AGE_HOURS: "24"
+      BOT_REMINDER_CHECK_INTERVAL_SECONDS: ${BOT_REMINDER_CHECK_INTERVAL_SECONDS:-3600}
     volumes:
       - media:/data/media:ro
     # Only used in BOT_MODE=webhook; polling ignores it.
