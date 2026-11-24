@@ -119,7 +119,7 @@ class PaymentEvent(Base, UUIDPrimaryKey):
     __tablename__ = "payment_events"
 
     provider: Mapped[str] = mapped_column(String(24), nullable=False)
-    provider_event_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    provider_event_id: Mapped[str] = mapped_column(String(255), nullable=False)
     order_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("payment_orders.id", ondelete="SET NULL"), index=True
     )

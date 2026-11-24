@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 from dataclasses import replace
 from datetime import timedelta
@@ -45,6 +46,15 @@ logger = logging.getLogger("zooffer.billing")
 
 ORDER_TTL_MINUTES = 30
 REUSE_ORDER_MINUTES = 15
+MAX_EVENT_ID_CHARS = 255
+
+
+def _event_id(value: str) -> str:
+    """Keep provider event ids within the column limit without losing uniqueness."""
+    if len(value) <= MAX_EVENT_ID_CHARS:
+        return value
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+    return f"{value[: MAX_EVENT_ID_CHARS - 17]}:{digest}"
 
 
 def payment_mode() -> str:
@@ -644,7 +654,7 @@ async def _record_event(
         .values(
             id=uuid4(),
             provider=provider,
-            provider_event_id=event.provider_event_id,
+            provider_event_id=_event_id(event.provider_event_id),
             order_id=order_id,
             event_type=event.event_type,
             signature_valid=signature_valid,
