@@ -16,8 +16,8 @@ flowchart LR
   DB[(PostgreSQL 16)]
   R[(Redis)]
   S[(Object storage)]
-  T[Telegram Bot API]
-  Y[YooKassa]
+  T[Telegram Bot API<br/>Stars]
+  Y[Robokassa / YooKassa<br/>optional web]
   Q[Worker]
   W --> P
   M --> P
@@ -51,8 +51,8 @@ backend/
   tests/              unit + integration tests
 bot/                  aiogram application (thin)
 web/                  Next.js App Router (website + /tg Mini App)
-infra/                PostgreSQL init script for the local Compose stack
-scripts/              demo seed, local CI launcher and operational helpers
+infra/                production compose (PC/VPS), Caddyfile, env examples, postgres init
+scripts/              seeds, admin bootstrap, local CI and operational helpers
 docs/                 product/engineering documentation
 ```
 

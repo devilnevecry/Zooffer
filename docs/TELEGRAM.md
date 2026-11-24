@@ -1,26 +1,29 @@
 # Telegram: bot and Mini App
 
-Status: bot logic, webhook security, onboarding, wizard, discovery, chats, notifications and Mini App
-screens are implemented. Live verification is `BLOCKED` because no `TELEGRAM_BOT_TOKEN` or public
-HTTPS domain exists (B2/B3).
+Status: bot logic, webhook security, onboarding, wizard, discovery, chats, notifications, Mini App
+screens and Telegram Stars payments are implemented. Live verification needs the real bot token and
+a public HTTPS domain (see `docs/DEPLOY.md`).
 
 ## Components
 
 | Component | Location | Notes |
 |---|---|---|
 | Bot entrypoint | `bot/zooffer_bot/__main__.py` | aiogram 3 dispatcher, polling or webhook |
-| Handlers | `bot/zooffer_bot/handlers/` | `/start`, menu, wizard, swipes, chats, settings, support |
+| Handlers | `bot/zooffer_bot/handlers/` | `/start`, menu, wizard, swipes, chats, settings, support, payments |
 | Signed callbacks | `bot/zooffer_bot/callbacks.py` | Versioned, HMAC-signed, ≤64 bytes |
 | Notification worker | `bot/zooffer_bot/notifications.py` | Preferences, quiet hours, dedupe, retries |
 | Mini App | `web/app/tg/*` | Shared API/types/design with the website |
 | Session minting | `backend/zooffer/api/v1/auth.py` | Validated `initData` → HttpOnly session |
+| Stars payments | `backend/zooffer/services/billing_service.py`, `bot/zooffer_bot/handlers/payments.py` | Invoice, pre-checkout validation, idempotent activation |
 
 ## BotFather setup
 
 1. Create a bot and store the token as `TELEGRAM_BOT_TOKEN` (never commit it).
 2. Set the username in `TELEGRAM_BOT_USERNAME` (without `@`).
-3. Generate a webhook secret and set `TELEGRAM_WEBHOOK_SECRET`.
-4. Configure the command list (Russian):
+3. `/setdomain` → choose the bot → the public domain (needed by the website Login Widget).
+4. Generate a webhook secret and set `TELEGRAM_WEBHOOK_SECRET` (even in polling mode the backend
+   validation requires it when `ENABLE_TELEGRAM=true`).
+5. Configure the command list (Russian):
 
    ```text
    start - Начать
@@ -40,43 +43,34 @@ HTTPS domain exists (B2/B3).
    stop - Отключить уведомления
    ```
 
-5. Set the menu button to the Mini App URL `https://<domain>/tg`.
-6. Register the Mini App domain in BotFather and note the short name.
-7. Privacy mode: the bot does not need group messages; keep the default privacy mode.
-8. Payments: Stars require a real merchant/bot configuration and are `BLOCKED` (B5).
+6. `/setmenubutton` → URL `https://<domain>/tg` (Mini App).
+7. `/newapp` → title `Zooffer`, short name `zooffer`, URL `https://<domain>/tg`.
+8. Payments: Telegram Stars works out of the box with the bot token. The invoice uses currency
+   `XTR`, `provider_token=""`, and the amount stored in `plans.stars_amount`.
 
-## Webhook
+## Transport: polling vs webhook
 
-The default mode is webhook. The bot validates the `X-Telegram-Bot-Api-Secret-Token` header,
-deduplicates updates, and optionally processes them through a bounded in-process queue.
+Polling (default in `infra/compose.prod.pc.yaml`) works behind NAT/CGNAT and needs no inbound port:
 
 ```powershell
 $env:PYTHONPATH='backend;bot'
-$env:BOT_MODE='webhook'
+$env:BOT_MODE='polling'
 $env:TELEGRAM_BOT_TOKEN='...'
-$env:TELEGRAM_WEBHOOK_SECRET='...'
-$env:BOT_PUBLIC_URL='https://zooffer.example'
-$env:BOT_WEBHOOK_PATH='/telegram/webhook'
 .venv\Scripts\python -m zooffer_bot
 ```
 
-Register the webhook (after DNS/TLS are ready):
+Webhook mode additionally requires a public HTTPS URL reachable from Telegram:
 
 ```powershell
-curl "https://api.telegram.org/bot$env:TELEGRAM_BOT_TOKEN/setWebhook" `
-  -d "url=$env:BOT_PUBLIC_URL$env:BOT_WEBHOOK_PATH" `
-  -d "secret_token=$env:TELEGRAM_WEBHOOK_SECRET" `
-  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\"]"
+$env:BOT_MODE='webhook'
+$env:TELEGRAM_WEBHOOK_URL='https://<domain>/telegram/webhook'
+$env:TELEGRAM_WEBHOOK_SECRET='...'
 ```
 
-For local development use long polling instead:
-
-```powershell
-$env:BOT_MODE='polling'
-```
-
-The in-process queue (`BOT_UPDATE_QUEUE=queue`) is bounded and not durable. A durable queue and
-external worker are documented as pending work; do not claim production-grade delivery.
+The bot registers the webhook itself on start. The endpoint validates the
+`X-Telegram-Bot-Api-Secret-Token` header, deduplicates `update_id`, and can pass updates through a
+bounded in-process queue (`BOT_UPDATE_QUEUE=queue`). The queue is not durable; that is tracked in
+`docs/KNOWN_ISSUES.md`.
 
 ## Authentication and account linking
 
@@ -88,16 +82,28 @@ external worker are documented as pending work; do not claim production-grade de
   continuity as a fallback.
 - Telegram first name is only a suggestion for the public name; it is validated by
   `validate_display_name`. Other users see only the public name or «Владелец».
-- `/buy` reports that a Telegram Stars purchase flow is not implemented yet and never implies a
-  fake purchase. Digital goods inside Telegram must use Stars; no external card link is offered,
-  even when the website's YooKassa provider is live. Telegram Stars remain `BLOCKED` (B5).
+- `/buy` creates a real Telegram Stars invoice. Digital goods inside Telegram must use Stars; no
+  external card link is offered inside Telegram.
+- `/buy` fails closed when the plan still has `is_placeholder_price=true` or `stars_amount` is unset.
+
+## Telegram Stars lifecycle
+
+1. User sends `/buy`, chooses a plan, or opens the Mini App subscription page.
+2. Backend `prepare_stars_order` creates/reuses a `PaymentOrder` with `currency="XTR"` and
+   `amount_kopecks=stars_amount`.
+3. Bot calls `send_invoice` (bot) or the backend calls `createInvoiceLink` (Mini App).
+4. Telegram sends `pre_checkout_query`; the bot validates currency, payload and amount.
+5. Telegram sends `successful_payment`; `confirm_stars_payment` activates the subscription once,
+   keyed by `telegram_payment_charge_id`.
+6. Refund is an explicit admin action and calls `refundStarPayment`; the refund id is stored in the
+   payment metadata.
 
 ## Privacy in Telegram
 
 - Notifications and callbacks use the same public views as the website.
 - No Telegram username, ID, phone or profile photo is shown to other users.
 - Deep links use opaque public UUIDs or single-use tokens.
-- The bot never requests a phone contact unless a documented consented purpose exists.
+- The bot never requests a phone contact.
 - `listing_*` links use the listing slug for the Mini App route.
 
 ## Notification worker
@@ -112,16 +118,17 @@ also respect the `in_app` preference.
 `/tg` (discovery), `/tg/search`, `/tg/listing/[slug]`, `/tg/favorites`, `/tg/matches`, `/tg/chats`,
 `/tg/listings`, `/tg/listings/new`, `/tg/profile`, `/tg/subscription`, `/tg/partners`, `/tg/support`.
 The Mini App uses `MiniAppChrome` with a bottom tab bar. It does not duplicate business logic; it calls
-the same backend API. Subscription purchase inside the Mini App is disabled until the Telegram Stars
-flow exists; no card checkout route is exposed under `/tg`.
+the same backend API. The subscription page opens the Stars invoice with `openInvoice`.
 
-## Live verification checklist (blocked)
+## Live verification checklist
 
 - [ ] `getMe` succeeds and the token is valid.
-- [ ] Webhook registration returns `ok: true`; `getWebhookInfo` shows no errors.
+- [ ] Webhook registration returns `ok: true`; `getWebhookInfo` shows no errors (webhook mode).
 - [ ] `/start` onboarding stores consent and creates one canonical account.
 - [ ] Deep links `link_*`, `ref_*`, `listing_*`, `utm_*` resolve correctly.
 - [ ] Mini App `initData` mints a session and shows the same account as the website.
+- [ ] Website Login Widget signs in the same account.
 - [ ] Swipe quota is shared across website, bot and Mini App.
+- [ ] `/buy` shows a Stars invoice; payment activates the plan once.
 - [ ] Notification respects quiet hours and blocked-bot handling.
 - [ ] No private data appears in bot messages or Mini App public views.

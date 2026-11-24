@@ -1,5 +1,9 @@
 name: zooffer-prod-pc
 
+# Runs on the Windows 11 / Linux machine that hosts the data.
+# Copy infra/prod.env.example to infra/.env and fill every value.
+# Start with: docker compose -f infra/compose.prod.pc.yaml up -d
+
 services:
   db:
     image: postgres:16.4-alpine
@@ -20,37 +24,57 @@ services:
   redis:
     image: redis:7.4-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-zooffer_redis_password}"]
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${REDIS_PASSWORD:?set REDIS_PASSWORD}",
+      ]
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-zooffer_redis_password} ping"]
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   backend:
-    image: zooffer/backend:latest
+    image: zooffer/app:latest
     restart: unless-stopped
     environment:
       ENVIRONMENT: prod
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       APP_BASE_URL: ${APP_BASE_URL}
       API_BASE_URL: ${API_BASE_URL}
       PUBLIC_API_URL: ${PUBLIC_API_URL}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zooffer}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-zooffer}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-zooffer_redis_password}@redis:6379/0
-      SESSION_SECRET: ${SESSION_SECRET}
-      SECRET_PEPPER: ${SECRET_PEPPER}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      SECRET_PEPPER: ${SECRET_PEPPER:?set SECRET_PEPPER}
       COOKIE_SECURE: "true"
       COOKIE_DOMAIN: ""
-      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-telegram_stars}
       TELEGRAM_STARS_ENABLED: ${TELEGRAM_STARS_ENABLED:-true}
       ENABLE_TELEGRAM: "true"
-      METRICS_TOKEN: ${METRICS_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
+      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID:-0}
+      TELEGRAM_CHANNEL_URL: ${TELEGRAM_CHANNEL_URL}
+      ADMIN_BOOTSTRAP_TOKEN: ${ADMIN_BOOTSTRAP_TOKEN:-}
+      EMAIL_AUTH_ENABLED: "false"
       MEDIA_BACKEND: local
       MEDIA_LOCAL_PATH: /data/media
       MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
-      LOG_LEVEL: INFO
+    volumes:
+      - media:/data/media
+    # Reachable from the VPS through Tailscale/WireGuard. Restrict inbound to the
+    # tunnel interface with the host firewall; never forward this port on the router.
+    ports:
+      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -59,16 +83,36 @@ services:
     command: ["uvicorn", "zooffer.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   bot:
-    image: zooffer/backend:latest
+    image: zooffer/app:latest
     restart: unless-stopped
+    command: ["python", "-m", "zooffer_bot"]
     environment:
       ENVIRONMENT: prod
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      APP_BASE_URL: ${APP_BASE_URL}
+      API_BASE_URL: ${API_BASE_URL}
+      PUBLIC_API_URL: ${PUBLIC_API_URL}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zooffer}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-zooffer}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      SECRET_PEPPER: ${SECRET_PEPPER:?set SECRET_PEPPER}
+      COOKIE_SECURE: "true"
+      COOKIE_DOMAIN: ""
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-telegram_stars}
+      TELEGRAM_STARS_ENABLED: ${TELEGRAM_STARS_ENABLED:-true}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN}
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
       TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
-      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID}
-      BOT_MODE: polling
+      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID:-0}
+      TELEGRAM_CHANNEL_URL: ${TELEGRAM_CHANNEL_URL}
+      MEDIA_LOCAL_PATH: /data/media
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
+      # Polling works behind NAT/CGNAT and needs no inbound port on the PC.
+      # Switch BOT_MODE to webhook only if a tunnel exposes /telegram/webhook.
+      BOT_MODE: ${BOT_MODE:-polling}
       BOT_PUBLIC_URL: ${APP_BASE_URL}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL:-}
       BOT_WEBHOOK_PATH: /telegram/webhook
       BOT_WEBHOOK_HOST: 0.0.0.0
       BOT_WEBHOOK_PORT: "8081"
@@ -83,11 +127,11 @@ services:
       BOT_NOTIFICATION_INTERVAL: "15"
       BOT_NOTIFICATION_BATCH: "20"
       BOT_NOTIFICATION_MAX_AGE_HOURS: "24"
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zooffer}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-zooffer}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-zooffer_redis_password}@redis:6379/0
-      SECRET_PEPPER: ${SECRET_PEPPER}
-      MEDIA_LOCAL_PATH: /data/media
-      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
+    volumes:
+      - media:/data/media:ro
+    # Only used in BOT_MODE=webhook; polling ignores it.
+    ports:
+      - "8081:8081"
     depends_on:
       db:
         condition: service_healthy
@@ -97,3 +141,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  media:

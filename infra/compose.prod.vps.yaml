@@ -1,30 +1,38 @@
 name: zooffer-prod-vps
 
+# Public host: TLS + Next.js website. The API/media/bot stay on the PC and are
+# reached through a tunnel address (Tailscale/WireGuard/Cloudflare).
+# Copy infra/vps.env.example to infra/.env and fill every value.
+# Start with: docker compose -f infra/compose.prod.vps.yaml up -d --build
+
 services:
   web:
     image: zooffer/web:latest
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: https://${ZOOFER_DOMAIN}
+        NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+        NEXT_PUBLIC_TELEGRAM_BOT_URL: ${NEXT_PUBLIC_TELEGRAM_BOT_URL}
+        NEXT_PUBLIC_TELEGRAM_MINI_APP_URL: ${NEXT_PUBLIC_TELEGRAM_MINI_APP_URL}
+        NEXT_PUBLIC_TELEGRAM_CHANNEL_URL: ${NEXT_PUBLIC_TELEGRAM_CHANNEL_URL}
+        API_INTERNAL_URL: ${ZOOFER_BACKEND_UPSTREAM}
     restart: unless-stopped
+    expose:
+      - "3000"
     environment:
-      ENVIRONMENT: prod
-      APP_BASE_URL: https://${ZOOFFER_DOMAIN}
-      API_BASE_URL: https://${ZOOFFER_DOMAIN}
-      PUBLIC_API_URL: https://${ZOOFFER_DOMAIN}
-      NEXT_PUBLIC_APP_URL: https://${ZOOFFER_DOMAIN}
+      NODE_ENV: production
+      APP_BASE_URL: https://${ZOOFER_DOMAIN}
+      API_BASE_URL: https://${ZOOFER_DOMAIN}
+      PUBLIC_API_URL: https://${ZOOFER_DOMAIN}
+      NEXT_PUBLIC_APP_URL: https://${ZOOFER_DOMAIN}
       NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
       NEXT_PUBLIC_TELEGRAM_BOT_URL: ${NEXT_PUBLIC_TELEGRAM_BOT_URL}
       NEXT_PUBLIC_TELEGRAM_MINI_APP_URL: ${NEXT_PUBLIC_TELEGRAM_MINI_APP_URL}
       NEXT_PUBLIC_TELEGRAM_CHANNEL_URL: ${NEXT_PUBLIC_TELEGRAM_CHANNEL_URL}
-      API_INTERNAL_URL: http://${ZOOFFER_BACKEND_UPSTREAM}
-      MEDIA_PUBLIC_BASE_URL: https://${ZOOFFER_DOMAIN}
-      COOKIE_SECURE: "true"
-      COOKIE_DOMAIN: ""
-      SESSION_SECRET: ${SESSION_SECRET}
-      SECRET_PEPPER: ${SECRET_PEPPER}
-      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
-      TELEGRAM_STARS_ENABLED: ${TELEGRAM_STARS_ENABLED:-true}
-      ENABLE_TELEGRAM: "true"
-    depends_on:
-      - caddy
+      API_INTERNAL_URL: ${ZOOFER_BACKEND_UPSTREAM}
+      MEDIA_PUBLIC_BASE_URL: https://${ZOOFER_DOMAIN}
 
   caddy:
     image: caddy:2-alpine
@@ -33,15 +41,17 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      ZOOFFER_APP_DOMAIN: ${ZOOFFER_DOMAIN}
+      ZOOFER_DOMAIN: ${ZOOFER_DOMAIN}
       ZOOFER_EMAIL: ${ZOOFER_EMAIL}
       ZOOFER_BACKEND_UPSTREAM: ${ZOOFER_BACKEND_UPSTREAM}
-      ZOOFER_BACKEND_UPSTREAM_BOT: ${ZOOFER_BACKEND_UPSTREAM_BOT}
-      ZOOFER_WEB_UPSTREAM: ${ZOOFER_WEB_UPSTREAM}
+      ZOOFER_BOT_UPSTREAM: ${ZOOFER_BOT_UPSTREAM}
+      ZOOFER_WEB_UPSTREAM: http://web:3000
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    depends_on:
+      - web
 
 volumes:
   caddy_data:

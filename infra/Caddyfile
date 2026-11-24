@@ -1,31 +1,37 @@
 {
-    email {$ZOOFFER_EMAIL}
+	email {$ZOOFER_EMAIL}
 }
 
-{$ZOOFFER_APP_DOMAIN} {
+{$ZOOFER_DOMAIN} {
     encode zstd gzip
 
     header {
         Strict-Transport-Security "max-age=31536000;"
         X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Telegram Web opens Mini Apps inside an iframe on web.telegram.org.
+        # frame-ancestors allows only Telegram and the site itself; do not add
+        # X-Frame-Options: DENY here or the Mini App will not load in Telegram Web.
+        Content-Security-Policy "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org"
         -Server
         -X-Powered-By
     }
 
+    # API, media and the Telegram webhook live on the PC behind the tunnel.
     handle /api/* {
-        reverse_proxy {$ZOOFFER_BACKEND_UPSTREAM}
+        reverse_proxy {$ZOOFER_BACKEND_UPSTREAM}
     }
 
     handle /media/* {
-        reverse_proxy {$ZOOFFER_BACKEND_UPSTREAM}
+        reverse_proxy {$ZOOFER_BACKEND_UPSTREAM}
     }
 
     handle /telegram/* {
-        reverse_proxy {$ZOOFFER_BACKEND_UPSTREAM_BOT}
+        reverse_proxy {$ZOOFER_BOT_UPSTREAM}
     }
 
+    # Everything else is the Next.js site running on this VPS.
     handle {
-        reverse_proxy {$ZOOFFER_WEB_UPSTREAM}
+        reverse_proxy {$ZOOFER_WEB_UPSTREAM}
     }
 }

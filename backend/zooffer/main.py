@@ -101,6 +101,10 @@ def create_app() -> FastAPI:
         return await call_next(request)
 
     app.include_router(system.router)
+    # The public reverse proxy routes /api/* to the backend, so expose the same
+    # health/metrics endpoints under /api as well. Root paths stay for container
+    # healthchecks and local probes.
+    app.include_router(system.router, prefix="/api", include_in_schema=False)
     # Media is served from a stable, CDN-friendly root path; the /api/v1 alias keeps
     # older clients and tests working.
     app.include_router(media_api.router)

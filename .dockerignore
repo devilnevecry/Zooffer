@@ -1,0 +1,12 @@
+.git
+.gitignore
+.venv
+**/__pycache__
+**/*.pyc
+web/node_modules
+web/.next
+web/tsconfig.tsbuildinfo
+infra/.env
+.env
+data
+backups

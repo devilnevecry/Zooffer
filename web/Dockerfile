@@ -1,13 +1,14 @@
+# Build from the web directory:
+#   docker build -t zooffer/web:latest web
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY web/package.json web/package.json
-COPY web/package-lock.json web/package-lock.json
-RUN npm ci
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY web/ ./
+COPY . .
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ARG NEXT_PUBLIC_TELEGRAM_BOT_URL
@@ -19,14 +20,17 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
     NEXT_PUBLIC_TELEGRAM_BOT_URL=$NEXT_PUBLIC_TELEGRAM_BOT_URL \
     NEXT_PUBLIC_TELEGRAM_MINI_APP_URL=$NEXT_PUBLIC_TELEGRAM_MINI_APP_URL \
     NEXT_PUBLIC_TELEGRAM_CHANNEL_URL=$NEXT_PUBLIC_TELEGRAM_CHANNEL_URL \
-    API_INTERNAL_URL=$API_INTERNAL_URL
+    API_INTERNAL_URL=$API_INTERNAL_URL \
+    NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
 EXPOSE 3000
 CMD ["node", "server.js"]

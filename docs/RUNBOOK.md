@@ -1,8 +1,9 @@
 # Runbook
 
-Status: local development procedures are verified. Production deployment, TLS, DNS and backups are
-`BLOCKED` until hosting and credentials exist (B7). Never run these commands against production
-without a backup and a change window.
+Status: local development procedures are verified. Production images, compose files and Caddy
+configuration are committed; the first real deploy still needs domain, DNS, VPS and tunnel values
+(see `docs/DEPLOY.md`). Never run these commands against production without a backup and a change
+window.
 
 ## Local development
 
@@ -74,17 +75,18 @@ Production plan (not yet exercised because no host exists):
 
 **Restore has not been performed in this environment; it remains a launch blocker.**
 
-## Deploy (target design)
+## Deploy
 
-1. Build immutable images for backend, web and bot.
+The exact two-host procedure is in `docs/DEPLOY.md` (PC: `infra/compose.prod.pc.yaml`; VPS:
+`infra/compose.prod.vps.yaml` + `infra/Caddyfile`).
+
+1. Build immutable images: `docker build -t zooffer/app:latest .` and
+   `docker build -t zooffer/web:latest web` (compose can build them itself).
 2. Run migrations as a one-shot job before starting new app containers.
-3. Start backend and web behind Caddy/Nginx with TLS; start the bot with `restart: unless-stopped`.
-4. Register the Telegram webhook with the production secret.
-5. Verify `/healthz`, `/readyz`, login, a listing, a test payment in sandbox, and bot `/start`.
+3. Start backend and web behind Caddy with TLS; start the bot with `restart: unless-stopped`.
+4. Register the Telegram webhook only in `BOT_MODE=webhook`; polling needs no registration.
+5. Verify `/api/healthz`, `/api/readyz`, login, a listing, a Stars purchase and bot `/start`.
 6. Keep the previous image tag for rollback.
-
-No production compose/Caddy files are currently committed as verified deployment artifacts; do not
-claim a deployment.
 
 ## Rollback
 
@@ -113,8 +115,8 @@ claim a deployment.
 | `SECRET_PEPPER` | **Danger:** it encrypts private data and signs tokens. Requires a migration/re-encryption plan; do not rotate casually |
 | `TELEGRAM_BOT_TOKEN` | Revoke in BotFather, set the new token, restart the bot, re-register the webhook |
 | `TELEGRAM_WEBHOOK_SECRET` | Set a new value, restart, call `setWebhook` with the new secret |
-| YooKassa keys | Rotate in the merchant cabinet, update the secret store, restart backend |
-| SMTP credentials | Rotate at the provider, update the secret store, send a test e-mail |
+| Robokassa passwords | Rotate in the merchant cabinet, update the secret store, restart backend |
+| `METRICS_TOKEN` | Generate a new value, update Prometheus scrape config, restart backend |
 
 ## Reconciliation and support
 
@@ -126,8 +128,8 @@ claim a deployment.
 
 ## Known operational gaps
 
-- No production host, DNS, TLS or monitoring.
-- No durable bot update queue.
+- First production deploy (domain, DNS, TLS, tunnel) has not been executed yet.
+- No durable bot update queue (Telegram retries cover the normal case).
 - No automated backup job or executed restore drill.
-- No fiscalisation/receipt integration.
-- Legal and retention procedures await review.
+- Telegram Stars receipts are provided by Telegram; no separate fiscalisation integration.
+- Legal pages contain `<...>` placeholders for the self-employed operator details.
