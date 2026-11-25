@@ -42,6 +42,10 @@ dev = [
   "types-passlib",
 ]
 
+s3 = [
+  "boto3>=1.34",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["zooffer*"]

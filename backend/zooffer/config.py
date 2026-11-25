@@ -88,9 +88,16 @@ class Settings(BaseSettings):
     Development and test keep the legacy endpoints so the existing suite can run.
     """
 
-    media_backend: Literal["local"] = "local"  # S3 adapter is not implemented (B9)
+    media_backend: Literal["local", "s3"] = "local"
     media_local_path: str = "./data/media"
     media_public_base_url: str = "http://localhost:8000"
+    media_cdn_base_url: str = ""
+    s3_bucket: str = ""
+    s3_region: str = "us-east-1"
+    s3_endpoint_url: str = ""
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
+    s3_signed_url_ttl: int = 3600
     max_upload_bytes: int = 8 * 1024 * 1024
     max_image_pixels: int = 40_000_000
 

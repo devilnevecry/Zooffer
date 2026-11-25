@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./auth-provider";
 import { BellIcon, ChatIcon, HeartIcon, PlusIcon, SearchIcon, UserIcon } from "./icons";
 import { Wordmark } from "./wordmark";
+import { ThemeToggle } from "./theme-toggle";
 import { api } from "@/lib/client";
 import { initials } from "@/lib/format";
 import type { UnreadCount } from "@/lib/types";
@@ -71,6 +72,7 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="header-actions">
+          <ThemeToggle />
           {user ? (
             <>
               <Link

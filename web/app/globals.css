@@ -6938,3 +6938,41 @@ button {
     font-size: 1.2rem;
   }
 }
+
+/* ==========================================================================
+   Theme: user-toggleable dark mode (design upgrade)
+   ========================================================================== */
+:root[data-theme="dark"] {
+  --bg: #0f1622;
+  --surface: #1a2433;
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.13);
+  --ink: #eef3f9;
+  --ink-2: #c3ceda;
+  --ink-3: #8fa0b2;
+  --brand-400: #5fa6dd;
+  --brand-600: #2f81c4;
+  --brand-700: #8ec0e8;
+  --brand-900: #dcecf9;
+  --like: #ff7184;
+  --success: #4fce93;
+  --warning: #f0b44c;
+  --danger: #ff7b7b;
+  --shadow-soft: 0 18px 50px -24px rgba(0, 0, 0, 0.72);
+  --shadow-card: 0 10px 30px -18px rgba(0, 0, 0, 0.72);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}

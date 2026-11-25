@@ -16,12 +16,23 @@ from zooffer.api.v1 import admin as admin_api
 from zooffer.api.v1 import animals as animals_api
 from zooffer.api.v1 import auth as auth_api
 from zooffer.api.v1 import billing as billing_api
+from zooffer.api.v1 import channels as channels_api
 from zooffer.api.v1 import discovery as discovery_api
+from zooffer.api.v1 import events as events_api
 from zooffer.api.v1 import listings as listings_api
+from zooffer.api.v1 import lost as lost_api
+from zooffer.api.v1 import market as market_api
 from zooffer.api.v1 import media as media_api
 from zooffer.api.v1 import messaging as messaging_api
 from zooffer.api.v1 import notifications as notifications_api
+from zooffer.api.v1 import organizations as organizations_api
+from zooffer.api.v1 import places as places_api
+from zooffer.api.v1 import qa as qa_api
+from zooffer.api.v1 import reference as reference_api
 from zooffer.api.v1 import reports as reports_api
+from zooffer.api.v1 import services as services_api
+from zooffer.api.v1 import stories as stories_api
+from zooffer.api.v1 import video as video_api
 from zooffer.config import settings
 from zooffer.core.errors import AppError, app_error_handler
 from zooffer.core.logging import configure_logging, get_logger
@@ -113,14 +124,25 @@ def create_app() -> FastAPI:
     app.include_router(animals_api.router, prefix="/api/v1")
     app.include_router(listings_api.router, prefix="/api/v1")
     app.include_router(listings_api.public_router, prefix="/api/v1")
+    app.include_router(market_api.router, prefix="/api/v1")
+    app.include_router(lost_api.router, prefix="/api/v1")
     app.include_router(discovery_api.router, prefix="/api/v1")
+    app.include_router(events_api.router, prefix="/api/v1")
     app.include_router(discovery_api.favorites_router, prefix="/api/v1")
     app.include_router(messaging_api.router, prefix="/api/v1")
     app.include_router(notifications_api.router, prefix="/api/v1")
+    app.include_router(organizations_api.router, prefix="/api/v1")
+    app.include_router(qa_api.router, prefix="/api/v1")
+    app.include_router(places_api.router, prefix="/api/v1")
+    app.include_router(reference_api.router, prefix="/api/v1")
     app.include_router(billing_api.router, prefix="/api/v1")
+    app.include_router(channels_api.router, prefix="/api/v1")
     app.include_router(account_api.router, prefix="/api/v1")
     app.include_router(account_api.public_router, prefix="/api/v1")
     app.include_router(reports_api.router, prefix="/api/v1")
+    app.include_router(services_api.router, prefix="/api/v1")
+    app.include_router(stories_api.router, prefix="/api/v1")
+    app.include_router(video_api.router, prefix="/api/v1")
     app.include_router(admin_api.router, prefix="/api/v1")
     app.include_router(account_api.click_router)
     return app

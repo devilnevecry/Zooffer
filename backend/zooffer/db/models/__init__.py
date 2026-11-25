@@ -9,15 +9,28 @@ from zooffer.db.models.billing import (
     Refund,
     Subscription,
 )
+from zooffer.db.models.channel import Channel, ChannelPost, ChannelSubscription
+from zooffer.db.models.co_owner import AnimalCoOwner
 from zooffer.db.models.discovery import Favorite, Match, Swipe
+from zooffer.db.models.event import Event, EventAttendee
 from zooffer.db.models.geo import Breed, City, Region
 from zooffer.db.models.listing import Listing
+from zooffer.db.models.lost import LostReport, LostSighting
+from zooffer.db.models.market import (
+    CartItem,
+    Order,
+    OrderItem,
+    Product,
+    ProductCategory,
+    Shop,
+)
 from zooffer.db.models.messaging import (
     Conversation,
     ConversationParticipant,
     Message,
     MessageReport,
 )
+from zooffer.db.models.organization import Organization
 from zooffer.db.models.partner import (
     Partner,
     PartnerClick,
@@ -25,7 +38,11 @@ from zooffer.db.models.partner import (
     PartnerInquiry,
     PartnerOffer,
 )
+from zooffer.db.models.place import Place
+from zooffer.db.models.qa import Answer, Question
 from zooffer.db.models.quota import DailyQuotaUsage, QuotaEvent
+from zooffer.db.models.service import ServiceProfile, ServiceReview
+from zooffer.db.models.story import Story, StoryBookmark, StoryComment, StoryReaction
 from zooffer.db.models.system import (
     AnalyticsEvent,
     CampaignAttribution,
@@ -59,13 +76,16 @@ from zooffer.db.models.user import (
     UserPrivateData,
     UserSession,
 )
+from zooffer.db.models.video import VideoPost
 
 __all__ = [
     "AccountLinkToken",
     "AnalyticsEvent",
     "Animal",
+    "AnimalCoOwner",
     "AnimalDocument",
     "AnimalPhoto",
+    "Answer",
     "AuditLog",
     "AuthIdentity",
     "AuthToken",
@@ -73,6 +93,10 @@ __all__ = [
     "BotUpdateSeen",
     "Breed",
     "CampaignAttribution",
+    "CartItem",
+    "Channel",
+    "ChannelPost",
+    "ChannelSubscription",
     "City",
     "Consent",
     "Conversation",
@@ -80,10 +104,14 @@ __all__ = [
     "Credential",
     "DailyQuotaUsage",
     "EntitlementGrant",
+    "Event",
+    "EventAttendee",
     "Favorite",
     "LegalDocument",
     "Listing",
     "ListingSlugHistory",
+    "LostReport",
+    "LostSighting",
     "Match",
     "Message",
     "MessageReport",
@@ -92,6 +120,9 @@ __all__ = [
     "Notification",
     "NotificationDelivery",
     "NotificationPreference",
+    "Order",
+    "OrderItem",
+    "Organization",
     "Partner",
     "PartnerClick",
     "PartnerConversion",
@@ -99,15 +130,26 @@ __all__ = [
     "PartnerOffer",
     "PaymentEvent",
     "PaymentOrder",
+    "Place",
     "Plan",
     "PrivacyRequest",
+    "Product",
+    "ProductCategory",
     "Profile",
+    "Question",
     "QuotaEvent",
     "Referral",
     "Refund",
     "Region",
     "Report",
     "SavedSearch",
+    "ServiceProfile",
+    "ServiceReview",
+    "Shop",
+    "Story",
+    "StoryBookmark",
+    "StoryComment",
+    "StoryReaction",
     "Subscription",
     "SupportMessage",
     "SupportTicket",
@@ -117,4 +159,5 @@ __all__ = [
     "User",
     "UserPrivateData",
     "UserSession",
+    "VideoPost",
 ]

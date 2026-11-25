@@ -64,9 +64,60 @@ class LocalMediaStorage:
         return self._path(key).is_file()
 
 
+class S3MediaStorage:
+    def __init__(self) -> None:
+        try:
+            import boto3  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise ValidationAppError(
+                "boto3 не установлен", code="s3_unavailable", status_code=503
+            ) from exc
+        self.bucket = settings.s3_bucket
+        if not self.bucket:
+            raise ValidationAppError(
+                "S3 bucket не настроен", code="s3_unconfigured", status_code=503
+            )
+        self.client = boto3.client(
+            "s3",
+            region_name=settings.s3_region,
+            endpoint_url=settings.s3_endpoint_url or None,
+            aws_access_key_id=settings.s3_access_key_id or None,
+            aws_secret_access_key=settings.s3_secret_access_key or None,
+        )
+
+    async def save(self, key: str, data: bytes, content_type: str) -> None:
+        import anyio
+
+        def _put() -> None:
+            self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+
+        await anyio.to_thread.run_sync(_put)
+
+    async def read(self, key: str) -> bytes:
+        import anyio
+
+        def _get() -> bytes:
+            response = self.client.get_object(Bucket=self.bucket, Key=key)
+            return response["Body"].read()
+
+        try:
+            return await anyio.to_thread.run_sync(_get)
+        except Exception as exc:
+            raise ValidationAppError(
+                "Файл не найден", code="media_not_found", status_code=404
+            ) from exc
+
+    def exists(self, key: str) -> bool:
+        try:
+            self.client.head_object(Bucket=self.bucket, Key=key)
+            return True
+        except Exception:
+            return False
+
+
 def get_storage() -> MediaStorage:
-    # Only the local-disk adapter exists today. Production object storage (S3-compatible) is
-    # not implemented and remains blocked on credentials and a deployment target (B9).
+    if settings.media_backend == "s3":
+        return S3MediaStorage()
     return LocalMediaStorage()
 
 
@@ -144,7 +195,8 @@ async def process_and_store_image(content: bytes, *, prefix: str = "animals") ->
 
 
 def media_url(key: str) -> str:
-    return f"{settings.media_public_base_url.rstrip('/')}/media/{key}"
+    base = settings.media_cdn_base_url or settings.media_public_base_url
+    return f"{base.rstrip('/')}/media/{key}"
 
 
 def thumb_key_for(full_key: str) -> str:
