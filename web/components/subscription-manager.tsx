@@ -58,10 +58,10 @@ export function SubscriptionManager({
       const entries = await Promise.all(
         paidPlans.map(async (plan) => {
           try {
-            const preview = await api<PurchasePreview>(
-              "/api/v1/billing/preview?allow_renew=true",
-              { method: "POST", body: { plan_code: plan.code, months } },
-            );
+            const preview = await api<PurchasePreview>("/api/v1/billing/preview?allow_renew=true", {
+              method: "POST",
+              body: { plan_code: plan.code, months },
+            });
             return [plan.code, preview] as const;
           } catch {
             return null;
@@ -69,7 +69,11 @@ export function SubscriptionManager({
         }),
       );
       if (!cancelled) {
-        setPreviews(Object.fromEntries(entries.filter((e) => e !== null) as Array<readonly [string, PurchasePreview]>));
+        setPreviews(
+          Object.fromEntries(
+            entries.filter((e) => e !== null) as Array<readonly [string, PurchasePreview]>,
+          ),
+        );
       }
     }
     if (paidPlans.length) void load();
@@ -81,8 +85,7 @@ export function SubscriptionManager({
 
   const starsProvider = state.payment_provider === "telegram_stars";
   const purchaseMode = starsProvider ? (onStarsInvoice ? "stars" : "telegram") : "provider";
-  const botUrl =
-    telegramUrl ?? process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? "https://t.me/";
+  const botUrl = telegramUrl ?? process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? "https://t.me/";
 
   const cancel = async () => {
     if (
@@ -182,8 +185,8 @@ export function SubscriptionManager({
         <div className="notice">
           <ShieldIcon width={18} height={18} />
           <span>
-            Подписка оплачивается в Telegram Stars. На сайте оплата картой не принимается —
-            кнопка открывает бота, где счёт оплачивается звёздами.
+            Подписка оплачивается в Telegram Stars. На сайте оплата картой не принимается — кнопка
+            открывает бота, где счёт оплачивается звёздами.
           </span>
         </div>
       )}
@@ -254,9 +257,7 @@ export function SubscriptionManager({
             <button
               type="button"
               className="btn btn-primary"
-              disabled={
-                !previews[selected].can_buy || !state.payments_available || paying !== null
-              }
+              disabled={!previews[selected].can_buy || !state.payments_available || paying !== null}
               onClick={() => void startCheckout(selected, months)}
             >
               {paying === selected
@@ -342,7 +343,7 @@ export function SubscriptionManager({
                     disabled={!state.payments_available || !canBuy || paying !== null}
                   >
                     {!canBuy
-                      ? preview?.reason ?? "Недоступно"
+                      ? (preview?.reason ?? "Недоступно")
                       : selected === plan.code
                         ? "Выбрано ↓"
                         : "Выбрать тариф"}

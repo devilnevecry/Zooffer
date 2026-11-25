@@ -13,7 +13,9 @@ export default async function MarketPage() {
     serverFetch<Record<string, unknown>>("/api/v1/market/products"),
   ]);
   const shopItems = Array.isArray(shops?.items) ? (shops.items as Record<string, unknown>[]) : [];
-  const productItems = Array.isArray(products?.items) ? (products.items as Record<string, unknown>[]) : [];
+  const productItems = Array.isArray(products?.items)
+    ? (products.items as Record<string, unknown>[])
+    : [];
   return (
     <div className="page page-tight">
       <div className="container">
@@ -38,7 +40,8 @@ export default async function MarketPage() {
           <ul>
             {productItems.map((item) => (
               <li key={String(item.public_id)}>
-                <strong>{String(item.title ?? "")}</strong> — {String(item.price_kopecks ?? "")} коп.
+                <strong>{String(item.title ?? "")}</strong> — {String(item.price_kopecks ?? "")}{" "}
+                коп.
               </li>
             ))}
           </ul>

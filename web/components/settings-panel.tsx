@@ -390,7 +390,8 @@ export function SettingsPanel({
           ))}
         </div>
         <p className="field-hint">
-          Уведомления приходят в приложение и в Telegram. Тихие часы настраиваются в боте и Mini App.
+          Уведомления приходят в приложение и в Telegram. Тихие часы настраиваются в боте и Mini
+          App.
         </p>
         <button
           type="button"

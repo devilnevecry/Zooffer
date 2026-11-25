@@ -22,7 +22,11 @@ export default async function LostPage() {
               <li key={String(item.public_id)}>
                 <strong>{String(item.title ?? "")}</strong> — {String(item.status ?? "")}
                 {item.description ? <p>{String(item.description)}</p> : null}
-                <small>{String((item.owner as Record<string, unknown> | undefined)?.display_name ?? "Владелец")}</small>
+                <small>
+                  {String(
+                    (item.owner as Record<string, unknown> | undefined)?.display_name ?? "Владелец",
+                  )}
+                </small>
               </li>
             ))}
           </ul>

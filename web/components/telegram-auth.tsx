@@ -11,8 +11,7 @@ import type { AuthResponse, TelegramLoginPayload } from "@/lib/types";
 
 const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
 const botUrl =
-  process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ??
-  (botUsername ? `https://t.me/${botUsername}` : "");
+  process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? (botUsername ? `https://t.me/${botUsername}` : "");
 const miniAppUrl = process.env.NEXT_PUBLIC_TELEGRAM_MINI_APP_URL ?? "";
 
 declare global {
@@ -96,8 +95,8 @@ export function TelegramAuth({ intent = "login" }: { intent?: "login" | "registe
         <div className="telegram-widget" ref={containerRef} aria-busy={busy} />
       ) : (
         <p className="muted small">
-          Кнопка входа через Telegram появится после настройки бота. Пока откройте бота и
-          отправьте /start.
+          Кнопка входа через Telegram появится после настройки бота. Пока откройте бота и отправьте
+          /start.
         </p>
       )}
 
