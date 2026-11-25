@@ -58,14 +58,16 @@ BREEDS = [
 
 
 def upgrade() -> None:
-    breeds = sa.table(
-        "breeds",
-        sa.column("species", sa.String),
-        sa.column("name", sa.String),
-        sa.column("slug", sa.String),
-    )
-    op.bulk_insert(breeds, [{"species": s, "name": n, "slug": sl} for s, n, sl in BREEDS])
+    # Idempotent seed: skip breeds that already exist (from previous installs/seeds).
+    for species, name, slug in BREEDS:
+        op.execute(
+            sa.text(
+                "INSERT INTO breeds (species, name, slug) VALUES (:species, :name, :slug) "
+                "ON CONFLICT (species, slug) DO NOTHING"
+            ).bindparams(species=species, name=name, slug=slug)
+        )
 
 
 def downgrade() -> None:
-    op.execute("DELETE FROM breeds")
+    # Keep data on downgrade to avoid deleting user-referenced breeds.
+    pass
