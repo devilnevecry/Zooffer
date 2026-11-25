@@ -15,6 +15,11 @@ import type { UnreadCount } from "@/lib/types";
 const mainLinks = [
   { href: "/discovery", label: "Подбор" },
   { href: "/search", label: "Поиск" },
+  { href: "/lost", label: "Потеряшки" },
+  { href: "/places", label: "Места" },
+  { href: "/services", label: "Услуги" },
+  { href: "/market", label: "Маркет" },
+  { href: "/video", label: "Видео" },
   { href: "/partners", label: "Партнёрам" },
   { href: "/support", label: "Помощь" },
 ];
